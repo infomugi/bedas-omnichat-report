@@ -1,0 +1,427 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Buat WhatsApp Blast - OmniChat Platform</title>
+    
+    <!-- Google Fonts: Inter -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    
+    <!-- Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script>
+        tailwind.config = {
+            darkMode: 'class',
+            theme: {
+                extend: {
+                    colors: {
+                        dark: {
+                            bg: '#0f172a',
+                            card: '#1e293b',
+                            border: '#334155',
+                            text: '#f8fafc'
+                        }
+                    }
+                }
+            }
+        }
+    </script>
+    
+    <!-- Theme Script -->
+    <script>
+        if (localStorage.getItem('theme') === 'dark' || (!('theme' in localStorage) && window.matchMedia('(prefers-color-scheme: dark)').matches)) {
+            document.documentElement.classList.add('dark');
+        } else {
+            document.documentElement.classList.remove('dark');
+        }
+    </script>
+    
+    <!-- Font Awesome -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    
+    <style>
+        body {
+            font-family: 'Inter', sans-serif;
+            background-color: #f8fafc;
+            transition: background-color 300ms ease;
+        }
+        .dark body {
+            background-color: #0f172a;
+        }
+        
+        /* Custom Scrollbar */
+        ::-webkit-scrollbar {
+            width: 6px;
+            height: 6px;
+        }
+        ::-webkit-scrollbar-track {
+            background: transparent; 
+        }
+        ::-webkit-scrollbar-thumb {
+            background: #cbd5e1; 
+            border-radius: 10px;
+        }
+        .dark ::-webkit-scrollbar-thumb {
+            background: #334155;
+        }
+        ::-webkit-scrollbar-thumb:hover {
+            background: #94a3b8; 
+        }
+        .dark ::-webkit-scrollbar-thumb:hover {
+            background: #475569;
+        }
+
+        .step-active {
+            box-shadow: 0 0 0 4px #d1fae5;
+            border-color: #10b981;
+            color: #059669;
+        }
+        .dark .step-active {
+            box-shadow: 0 0 0 4px rgba(16, 185, 129, 0.1);
+            border-color: #10b981;
+            color: #10b981;
+        }
+
+        .wa-chat-bg {
+            background-color: #e5ddd5;
+            background-image: url('https://user-images.githubusercontent.com/15075759/28719144-86dc0f70-73b1-11e7-911d-60d70fcded21.png');
+        }
+        .dark .wa-chat-bg {
+            background-color: #0b141a;
+            background-image: opacity-10;
+        }
+    </style>
+</head>
+<body class="flex h-screen overflow-hidden text-slate-800 antialiased">
+
+    <!-- Sidebar -->
+    <aside class="w-64 bg-white dark:bg-slate-900 border-r border-slate-200 dark:border-slate-800 flex flex-col h-full hidden md:flex shadow-[4px_0_24px_rgba(0,0,0,0.02)] z-10">
+        <!-- Logo -->
+        <div class="h-20 flex items-center px-6 border-b border-slate-100 dark:border-slate-800 shrink-0">
+            <div class="flex items-center gap-3 text-xl font-bold text-slate-800 dark:text-white">
+                <div class="w-8 h-8 rounded-lg bg-emerald-500 flex items-center justify-center text-white shadow-lg shadow-emerald-500/30">
+                    <i class="fa-solid fa-paper-plane text-sm"></i>
+                </div>
+                <span>Omni<span class="text-emerald-600">Chat</span></span>
+            </div>
+        </div>
+
+        <!-- Menu -->
+        <nav class="flex-1 overflow-y-auto py-6 px-4 space-y-1">
+            <p class="px-3 text-[11px] font-bold text-slate-400 dark:text-slate-500 uppercase tracking-wider mb-3">Main Menu</p>
+            <a href="dashboard.html" class="flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm font-medium text-slate-600 dark:text-slate-400 hover:bg-slate-50 dark:hover:bg-slate-800 hover:text-emerald-600 transition-all">
+                <i class="fa-solid fa-border-all w-5 text-center text-slate-400"></i>
+                Dashboard
+            </a>
+            <a href="whatsapp-api.html" class="flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm font-medium text-slate-600 dark:text-slate-400 hover:bg-slate-50 dark:hover:bg-slate-800 hover:text-emerald-600 transition-all">
+                <i class="fa-brands fa-whatsapp w-5 text-center text-slate-400"></i>
+                WhatsApp API
+            </a>
+            <a href="whatsapp-blast.html" class="flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm font-medium text-emerald-700 dark:text-emerald-400 bg-emerald-50/80 dark:bg-emerald-900/20 shadow-sm transition-all border border-emerald-100/50 dark:border-emerald-800/50">
+                <i class="fa-solid fa-bullhorn w-5 text-center text-emerald-600"></i>
+                WhatsApp Blast
+            </a>
+            <a href="sms-blast.html" class="flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm font-medium text-slate-600 dark:text-slate-400 hover:bg-slate-50 dark:hover:bg-slate-800 hover:text-emerald-600 transition-all">
+                <i class="fa-solid fa-comment-sms w-5 text-center text-slate-400"></i>
+                SMS Blast
+            </a>
+            <a href="sms-lba.html" class="flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm font-medium text-slate-600 dark:text-slate-400 hover:bg-slate-50 dark:hover:bg-slate-800 hover:text-emerald-600 transition-all">
+                <i class="fa-solid fa-location-dot w-5 text-center text-slate-400"></i>
+                SMS LBA
+            </a>
+            
+            <div class="pt-6 mt-2">
+                <p class="px-3 text-[11px] font-bold text-slate-400 dark:text-slate-500 uppercase tracking-wider mb-3">Analytics & Report</p>
+                <a href="analytics.html" class="flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm font-medium text-slate-600 dark:text-slate-400 hover:bg-slate-50 dark:hover:bg-slate-800 hover:text-emerald-600 transition-all">
+                    <i class="fa-solid fa-chart-line w-5 text-center text-slate-400"></i>
+                    Analytics
+                </a>
+                <a href="billing.html" class="flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm font-medium text-slate-600 dark:text-slate-400 hover:bg-slate-50 dark:hover:bg-slate-800 hover:text-emerald-600 transition-all">
+                    <i class="fa-solid fa-file-invoice-dollar w-5 text-center text-slate-400"></i>
+                    Tagihan & Usage
+                </a>
+            </div>
+            
+            <div class="pt-6 mt-2">
+                <p class="px-3 text-[11px] font-bold text-slate-400 dark:text-slate-500 uppercase tracking-wider mb-3">System</p>
+                <a href="system.html" class="flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm font-medium text-slate-600 dark:text-slate-400 hover:bg-slate-50 dark:hover:bg-slate-800 hover:text-emerald-600 transition-all">
+                    <i class="fa-solid fa-server w-5 text-center text-slate-400"></i>
+                    System Log
+                </a>
+                <a href="settings.html" class="flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm font-medium text-slate-600 dark:text-slate-400 hover:bg-slate-50 dark:hover:bg-slate-800 hover:text-emerald-600 transition-all">
+                    <i class="fa-solid fa-gear w-5 text-center text-slate-400"></i>
+                    Pengaturan
+                </a>
+            </div>
+        </nav>
+        
+        <!-- User Mini Profile -->
+        <div class="p-4 border-t border-slate-100 dark:border-slate-800">
+            <div class="flex items-center gap-3 p-3 rounded-xl hover:bg-slate-50 dark:hover:bg-slate-800 cursor-pointer transition-all">
+                <img src="https://ui-avatars.com/api/?name=Admin+User&background=10b981&color=fff&rounded=true&bold=true" alt="Admin" class="w-9 h-9 rounded-full shadow-sm">
+                <div class="flex-1 min-w-0">
+                    <p class="text-sm font-bold text-slate-800 dark:text-white truncate">Admin User</p>
+                    <p class="text-xs text-slate-500 dark:text-slate-400 truncate">admin@omnichat.id</p>
+                </div>
+                <i class="fa-solid fa-chevron-right text-slate-400 text-xs"></i>
+            </div>
+        </div>
+    </aside>
+
+    <!-- Main Content -->
+    <main class="flex-1 flex flex-col h-full overflow-hidden bg-[#f8fafc]">
+        
+        <!-- Top Header -->
+        <header class="h-20 bg-white/80 dark:bg-slate-900/80 backdrop-blur-md border-b border-slate-200 dark:border-slate-800 flex items-center justify-between px-8 shrink-0 z-0">
+            <div class="flex items-center gap-4">
+                <a href="whatsapp-blast.html" class="w-10 h-10 rounded-xl border border-slate-200 dark:border-slate-700 flex items-center justify-center text-slate-500 dark:text-slate-400 hover:bg-slate-50 dark:hover:bg-slate-800 transition-all">
+                    <i class="fa-solid fa-arrow-left text-xs"></i>
+                </a>
+                <div>
+                    <h1 class="text-xl font-bold text-slate-800 dark:text-white">Buat Kampanye WhatsApp Blast</h1>
+                    <p class="text-xs text-slate-500 dark:text-slate-400 mt-1">Ikuti langkah mudah untuk mulai menyebarkan pesan Anda.</p>
+                </div>
+            </div>
+            <div class="flex items-center gap-4">
+                <button onclick="toggleTheme()" class="w-10 h-10 rounded-full border border-slate-200 dark:border-slate-700 flex items-center justify-center text-slate-500 dark:text-slate-400 hover:bg-slate-50 dark:hover:bg-slate-800 transition-all">
+                    <i class="fa-solid fa-moon dark:hidden"></i>
+                    <i class="fa-solid fa-sun hidden dark:block"></i>
+                </button>
+                <div class="h-8 w-px bg-slate-200 dark:bg-slate-700 mx-2"></div>
+                <div class="flex flex-col items-end">
+                    <span class="text-xs font-bold text-slate-400 dark:text-slate-500 uppercase tracking-tighter">Sisa Kredit</span>
+                    <span class="text-sm font-bold text-emerald-600">Rp 2.450.000</span>
+                </div>
+                <button class="bg-emerald-600 hover:bg-emerald-700 text-white text-sm font-bold px-6 py-2.5 rounded-xl transition-all shadow-lg shadow-emerald-600/20 ml-2">
+                    Kirim Sekarang
+                </button>
+            </div>
+        </header>
+
+        <!-- Dashboard Content -->
+        <div class="flex-1 overflow-y-auto p-4 md:p-8">
+            <div class="max-w-4xl mx-auto space-y-8">
+
+                <!-- Step Tabs -->
+                <div class="flex items-center justify-between relative px-4">
+                    <div class="absolute inset-0 flex items-center px-8" aria-hidden="true">
+                        <div class="w-full border-t-2 border-slate-100"></div>
+                    </div>
+                    <!-- Step 1 -->
+                    <div class="relative flex flex-col items-center gap-3">
+                        <div class="w-12 h-12 rounded-full bg-emerald-600 text-white flex items-center justify-center font-bold shadow-lg shadow-emerald-600/20 ring-4 ring-white">1</div>
+                        <span class="text-xs font-bold text-slate-800">Detail Kampanye</span>
+                    </div>
+                    <!-- Step 2 -->
+                    <div class="relative flex flex-col items-center gap-3">
+                        <div class="w-12 h-12 rounded-full bg-white border-2 border-slate-200 text-slate-400 flex items-center justify-center font-bold">2</div>
+                        <span class="text-xs font-bold text-slate-400">Isi Pesan</span>
+                    </div>
+                    <!-- Step 3 -->
+                    <div class="relative flex flex-col items-center gap-3">
+                        <div class="w-12 h-12 rounded-full bg-white border-2 border-slate-200 text-slate-400 flex items-center justify-center font-bold">3</div>
+                        <span class="text-xs font-bold text-slate-400">Jadwal & Konfirmasi</span>
+                    </div>
+                </div>
+
+                <!-- Form & Preview Container -->
+                <div class="grid grid-cols-1 lg:grid-cols-3 gap-8">
+                    
+                    <!-- Left: Form Card -->
+                    <div class="lg:col-span-2 space-y-8">
+                        <div class="bg-white dark:bg-slate-800 rounded-3xl border border-slate-200 dark:border-slate-700 shadow-sm p-8 md:p-10 transition-all">
+                            
+                            <!-- Section A: Basic Info -->
+                            <div class="space-y-8">
+                                <div>
+                                    <h3 class="text-lg font-bold text-slate-800 dark:text-white mb-6 flex items-center gap-3">
+                                        <span class="w-8 h-8 rounded-lg bg-emerald-50 dark:bg-emerald-900/20 text-emerald-600 dark:text-emerald-400 flex items-center justify-center text-sm"><i class="fa-solid fa-info"></i></span>
+                                        Informasi Dasar
+                                    </h3>
+                                    <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                                        <div class="md:col-span-2">
+                                            <label class="block text-xs font-bold text-slate-500 dark:text-slate-400 uppercase tracking-wider mb-2">Nama Kampanye</label>
+                                            <input type="text" placeholder="Misal: Promo Akhir Tahun 2026" class="w-full px-4 py-3 bg-slate-50 dark:bg-slate-900/50 border border-slate-200 dark:border-slate-700 rounded-xl text-sm text-slate-800 dark:text-slate-200 focus:ring-2 focus:ring-emerald-200 outline-none transition-all">
+                                        </div>
+                                        <div>
+                                            <label class="block text-xs font-bold text-slate-500 dark:text-slate-400 uppercase tracking-wider mb-2">Pilih Perangkat (Sender)</label>
+                                            <select class="w-full px-4 py-3 bg-slate-50 dark:bg-slate-900/50 border border-slate-200 dark:border-slate-700 rounded-xl text-sm text-slate-800 dark:text-slate-200 focus:ring-2 focus:ring-emerald-200 outline-none transition-all appearance-none cursor-pointer">
+                                                <option>CS Utama (+62812...)</option>
+                                                <option>Marketing A (+62857...)</option>
+                                                <option>Operasional (+62813...)</option>
+                                            </select>
+                                        </div>
+                                        <div>
+                                            <label class="block text-xs font-bold text-slate-500 dark:text-slate-400 uppercase tracking-wider mb-2">Kategori</label>
+                                            <select class="w-full px-4 py-3 bg-slate-50 dark:bg-slate-900/50 border border-slate-200 dark:border-slate-700 rounded-xl text-sm text-slate-800 dark:text-slate-200 focus:ring-2 focus:ring-emerald-200 outline-none transition-all appearance-none cursor-pointer">
+                                                <option>Promosi</option>
+                                                <option>Informasi / Notifikasi</option>
+                                                <option>Lainnya</option>
+                                            </select>
+                                        </div>
+                                    </div>
+                                </div>
+
+                                <hr class="border-slate-100 dark:border-slate-700">
+
+                                <!-- Section B: Message Content -->
+                                <div>
+                                    <h3 class="text-lg font-bold text-slate-800 dark:text-white mb-6 flex items-center gap-3">
+                                        <span class="w-8 h-8 rounded-lg bg-emerald-50 dark:bg-emerald-900/20 text-emerald-600 dark:text-emerald-400 flex items-center justify-center text-sm"><i class="fa-solid fa-pen-nib"></i></span>
+                                        Isi Pesan
+                                    </h3>
+                                    
+                                    <div class="space-y-4">
+                                        <div class="flex flex-wrap gap-2 mb-2">
+                                            <button onclick="insertVar('{{name}}')" class="px-3 py-1.5 bg-slate-100 dark:bg-slate-700 text-[10px] font-bold text-slate-600 dark:text-slate-300 rounded-lg hover:bg-emerald-500 hover:text-white transition-all">+{{Nama}}</button>
+                                            <button onclick="insertVar('{{date}}')" class="px-3 py-1.5 bg-slate-100 dark:bg-slate-700 text-[10px] font-bold text-slate-600 dark:text-slate-300 rounded-lg hover:bg-emerald-500 hover:text-white transition-all">+{{Tanggal}}</button>
+                                            <button onclick="insertVar('{{coupon}}')" class="px-3 py-1.5 bg-slate-100 dark:bg-slate-700 text-[10px] font-bold text-slate-600 dark:text-slate-300 rounded-lg hover:bg-emerald-500 hover:text-white transition-all">+{{Kupon}}</button>
+                                        </div>
+                                        <textarea id="messageInput" rows="8" oninput="updatePreview()" placeholder="Tuliskan pesan Anda di sini..." class="w-full p-6 bg-slate-50 dark:bg-slate-900/50 border border-slate-200 dark:border-slate-700 rounded-2xl text-sm text-slate-800 dark:text-slate-200 focus:ring-2 focus:ring-emerald-200 outline-none transition-all resize-none"></textarea>
+                                        <p class="text-[10px] text-slate-400 dark:text-slate-500 italic">Gunakan format markdown sederhana: *bold*, _italic_, ~strikethrough~</p>
+                                    </div>
+                                </div>
+
+                                <div class="pt-6 flex justify-between items-center">
+                                    <button class="text-sm font-bold text-slate-400 hover:text-slate-600 dark:hover:text-slate-200 transition-colors">Simpan Draft</button>
+                                    <button class="bg-slate-800 dark:bg-emerald-600 hover:bg-slate-900 dark:hover:bg-emerald-700 text-white font-bold px-8 py-3 rounded-xl transition-all shadow-lg flex items-center gap-2">
+                                        Langkah Selanjutnya
+                                        <i class="fa-solid fa-arrow-right text-xs"></i>
+                                    </button>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Data Penerima (Collapsed version) -->
+                        <div class="bg-white dark:bg-slate-800 rounded-3xl border border-slate-200 dark:border-slate-700 shadow-sm p-8 transition-all opacity-60">
+                            <h3 class="text-lg font-bold text-slate-400 dark:text-slate-500 flex items-center gap-3">
+                                <span class="w-8 h-8 rounded-lg bg-slate-50 dark:bg-slate-900 text-slate-300 dark:text-slate-600 flex items-center justify-center text-sm"><i class="fa-solid fa-users"></i></span>
+                                Data Penerima & Jadwal
+                            </h3>
+                        </div>
+                    </div>
+
+                    <!-- Right: WhatsApp Preview (Sticky) -->
+                    <div class="lg:col-span-1">
+                        <div class="sticky top-8 space-y-4">
+                            <p class="text-[10px] font-bold text-slate-400 dark:text-slate-500 uppercase tracking-widest px-4">Live Preview</p>
+                            
+                            <!-- Phone Mockup -->
+                            <div class="relative mx-auto w-full max-w-[280px] h-[580px] bg-slate-900 rounded-[3rem] border-[8px] border-slate-800 shadow-2xl overflow-hidden flex flex-col">
+                                <!-- Speaker/Camera -->
+                                <div class="absolute top-0 left-1/2 -translate-x-1/2 w-32 h-6 bg-slate-800 rounded-b-2xl z-20"></div>
+                                
+                                <!-- WA Header -->
+                                <div class="bg-[#075e54] pt-8 pb-3 px-4 flex items-center gap-3 shrink-0">
+                                    <i class="fa-solid fa-arrow-left text-white/80 text-xs"></i>
+                                    <div class="w-8 h-8 rounded-full bg-slate-200/20 flex items-center justify-center text-white/50 overflow-hidden">
+                                        <i class="fa-solid fa-user"></i>
+                                    </div>
+                                    <div>
+                                        <p class="text-white text-[11px] font-bold">Penerima Blast</p>
+                                        <p class="text-white/60 text-[8px]">Online</p>
+                                    </div>
+                                </div>
+
+                                <!-- WA Chat Body -->
+                                <div class="flex-1 wa-chat-bg p-3 overflow-y-auto space-y-4">
+                                    <div class="flex justify-center">
+                                        <span class="bg-blue-100/80 dark:bg-blue-900/40 text-[8px] text-blue-800 dark:text-blue-200 px-3 py-1 rounded-lg uppercase font-bold tracking-wider">Hari Ini</span>
+                                    </div>
+                                    
+                                    <!-- Message Bubble -->
+                                    <div class="max-w-[85%] bg-white dark:bg-[#1f2c33] p-2 rounded-xl rounded-tl-none shadow-sm shadow-black/5 relative">
+                                        <div id="previewText" class="text-[11px] text-slate-800 dark:text-slate-200 leading-relaxed whitespace-pre-wrap break-words min-h-[40px]">Halo! 👋 Selamat datang di platform OmniChat. Tulis pesan di panel sebelah kiri untuk melihat preview ini berubah secara langsung.</div>
+                                        <div class="flex justify-end gap-1 mt-1">
+                                            <span class="text-[8px] opacity-40">09:42</span>
+                                            <i class="fa-solid fa-check-double text-[8px] text-blue-400"></i>
+                                        </div>
+                                        <!-- Bubble Tail -->
+                                        <div class="absolute top-0 -left-1.5 w-0 h-0 border-t-[8px] border-t-white dark:border-t-[#1f2c33] border-l-[8px] border-l-transparent"></div>
+                                    </div>
+                                </div>
+
+                                <!-- WA Input -->
+                                <div class="p-3 bg-slate-50 dark:bg-[#121b22] flex items-center gap-2 shrink-0">
+                                    <div class="flex-1 bg-white dark:bg-[#2a3942] rounded-full px-4 py-2 flex items-center justify-between text-slate-400 dark:text-slate-500">
+                                        <span class="text-[10px]">Ketik pesan...</span>
+                                        <i class="fa-solid fa-face-smile text-sm"></i>
+                                    </div>
+                                    <div class="w-9 h-9 rounded-full bg-[#00a884] flex items-center justify-center text-white shadow-md">
+                                        <i class="fa-solid fa-microphone text-sm"></i>
+                                    </div>
+                                </div>
+                            </div>
+                            
+                            <div class="bg-amber-50 dark:bg-amber-900/20 border border-amber-100 dark:border-amber-900/50 rounded-2xl p-4">
+                                <p class="text-[10px] text-amber-800 dark:text-amber-200 leading-relaxed"><i class="fa-solid fa-lightbulb mr-1"></i> <strong>Pro Tip:</strong> Gunakan variabel personalisasi untuk mengurangi resiko akun terblokir.</p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+            </div>
+            
+            <!-- Footer text -->
+            <div class="max-w-4xl mx-auto mt-8 mb-4 border-t border-slate-100 pt-6 flex flex-col md:flex-row items-center justify-between text-xs text-slate-400">
+                <p>&copy; 2026 OmniChat Core Platform. Hak Cipta Dilindungi.</p>
+                <div class="flex gap-4 mt-2 md:mt-0">
+                    <a href="#" class="hover:text-slate-600 transition-colors">Syarat Layanan</a>
+                    <a href="#" class="hover:text-slate-600 transition-colors">Kebijakan Privasi</a>
+                </div>
+            </div>
+        </div>
+    </main>
+
+    <!-- Logic Scripts -->
+    <script>
+        // Theme Toggle Logic
+        function toggleTheme() {
+            const isDark = document.documentElement.classList.toggle('dark');
+            localStorage.setItem('theme', isDark ? 'dark' : 'light');
+        }
+
+        // Live Preview Logic
+        function updatePreview() {
+            const input = document.getElementById('messageInput');
+            const preview = document.getElementById('previewText');
+            let text = input.value;
+
+            if (text.trim() === "") {
+                text = "Tulis pesan di panel sebelah kiri untuk melihat preview ini berubah secara langsung.";
+            }
+
+            // Simple Markdown Support (Mock)
+            text = text
+                .replace(/\*(.*?)\*/g, '<strong class="font-bold">$1</strong>')
+                .replace(/_(.*?)_/g, '<em class="italic">$1</em>')
+                .replace(/~(.*?)~/g, '<del class="line-through opacity-60">$1</del>');
+
+            // Highlight Variables
+            text = text.replace(/(\{\{.*?\}\})/g, '<span class="text-emerald-500 font-bold">$1</span>');
+
+            preview.innerHTML = text;
+        }
+
+        function insertVar(val) {
+            const input = document.getElementById('messageInput');
+            const start = input.selectionStart;
+            const end = input.selectionEnd;
+            const text = input.value;
+            const before = text.substring(0, start);
+            const after = text.substring(end, text.length);
+            
+            input.value = before + val + after;
+            input.focus();
+            input.selectionStart = start + val.length;
+            input.selectionEnd = start + val.length;
+            
+            updatePreview();
+        }
+    </script>
+
+</body>
+</html>

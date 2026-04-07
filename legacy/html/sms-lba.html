@@ -1,0 +1,320 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>SMS LBA - OmniChat Platform</title>
+    
+    <!-- Google Fonts: Inter -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    
+    <!-- Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script>
+        tailwind.config = {
+            darkMode: 'class',
+            theme: {
+                extend: {
+                    colors: {
+                        dark: {
+                            bg: '#0f172a',
+                            card: '#1e293b',
+                            border: '#334155',
+                            text: '#f8fafc'
+                        }
+                    }
+                }
+            }
+        }
+    </script>
+    
+    <!-- Theme Script -->
+    <script>
+        if (localStorage.getItem('theme') === 'dark' || (!('theme' in localStorage) && window.matchMedia('(prefers-color-scheme: dark)').matches)) {
+            document.documentElement.classList.add('dark');
+        } else {
+            document.documentElement.classList.remove('dark');
+        }
+    </script>
+    
+    <!-- Font Awesome -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    
+    <style>
+        body { font-family: 'Inter', sans-serif; background-color: #f8fafc; transition: all 0.3s ease; }
+        .dark body { background-color: #0f172a; }
+        .map-grid { 
+            background: #e2e8f0; 
+            background-image: linear-gradient(rgba(255,255,255,.5) 1px, transparent 1px), linear-gradient(90deg, rgba(255,255,255,.5) 1px, transparent 1px); 
+            background-size: 20px 20px; 
+        }
+        .dark .map-grid {
+            background: #1e293b;
+            background-image: linear-gradient(rgba(255,255,255,.05) 1px, transparent 1px), linear-gradient(90deg, rgba(255,255,255,.05) 1px, transparent 1px); 
+        }
+        .map-bg {
+            background-image: url('https://images.unsplash.com/photo-1526778548025-fa2f459cd5c1?auto=format&fit=crop&q=80&w=1200');
+            background-size: cover;
+            background-position: center;
+        }
+        input[type="range"] {
+            -webkit-appearance: none;
+            appearance: none;
+            height: 6px;
+            background: #e2e8f0;
+            border-radius: 5px;
+            outline: none;
+        }
+        .dark input[type="range"] {
+            background: #334155;
+        }
+        input[type="range"]::-webkit-slider-thumb {
+            -webkit-appearance: none;
+            width: 18px;
+            height: 18px;
+            background: #6366f1;
+            border-radius: 50%;
+            cursor: pointer;
+            border: 2px solid white;
+            box-shadow: 0 0 10px rgba(99, 102, 241, 0.4);
+        }
+    </style>
+</head>
+<body class="flex h-screen overflow-hidden text-slate-800 antialiased">
+
+    <!-- Sidebar -->
+    <aside class="w-64 bg-white dark:bg-slate-900 border-r border-slate-200 dark:border-slate-800 flex flex-col h-full hidden md:flex shadow-[4px_0_24px_rgba(0,0,0,0.02)] z-10">
+        <!-- Logo -->
+        <div class="h-20 flex items-center px-6 border-b border-slate-100 dark:border-slate-800 shrink-0">
+            <div class="flex items-center gap-3 text-xl font-bold text-slate-800 dark:text-white">
+                <div class="w-8 h-8 rounded-lg bg-emerald-500 flex items-center justify-center text-white shadow-lg shadow-emerald-500/30">
+                    <i class="fa-solid fa-paper-plane text-sm"></i>
+                </div>
+                <span>Omni<span class="text-emerald-600">Chat</span></span>
+            </div>
+        </div>
+
+        <!-- Menu -->
+        <nav class="flex-1 overflow-y-auto py-6 px-4 space-y-1">
+            <p class="px-3 text-[11px] font-bold text-slate-400 dark:text-slate-500 uppercase tracking-wider mb-3">Main Menu</p>
+            <a href="dashboard.html" class="flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm font-medium text-slate-600 dark:text-slate-400 hover:bg-slate-50 dark:hover:bg-slate-800 hover:text-emerald-600 transition-all">
+                <i class="fa-solid fa-border-all w-5 text-center text-slate-400"></i>
+                Dashboard
+            </a>
+            <a href="whatsapp-api.html" class="flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm font-medium text-slate-600 dark:text-slate-400 hover:bg-slate-50 dark:hover:bg-slate-800 hover:text-emerald-600 transition-all">
+                <i class="fa-brands fa-whatsapp w-5 text-center text-slate-400"></i>
+                WhatsApp API
+            </a>
+            <a href="whatsapp-blast.html" class="flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm font-medium text-slate-600 dark:text-slate-400 hover:bg-slate-50 dark:hover:bg-slate-800 hover:text-emerald-600 transition-all">
+                <i class="fa-solid fa-bullhorn w-5 text-center text-slate-400"></i>
+                WhatsApp Blast
+            </a>
+            <a href="sms-blast.html" class="flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm font-medium text-slate-600 dark:text-slate-400 hover:bg-slate-50 dark:hover:bg-slate-800 hover:text-emerald-600 transition-all">
+                <i class="fa-solid fa-comment-sms w-5 text-center text-slate-400"></i>
+                SMS Blast
+            </a>
+            <a href="sms-lba.html" class="flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm font-medium text-emerald-700 dark:text-emerald-400 bg-emerald-50/80 dark:bg-emerald-900/20 shadow-sm transition-all border border-emerald-100/50 dark:border-emerald-800/50">
+                <i class="fa-solid fa-location-dot w-5 text-center text-emerald-600"></i>
+                SMS LBA
+            </a>
+            
+            <div class="pt-6 mt-2">
+                <p class="px-3 text-[11px] font-bold text-slate-400 dark:text-slate-500 uppercase tracking-wider mb-3">Analytics & Report</p>
+                <a href="analytics.html" class="flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm font-medium text-slate-600 dark:text-slate-400 hover:bg-slate-50 dark:hover:bg-slate-800 hover:text-emerald-600 transition-all">
+                    <i class="fa-solid fa-chart-line w-5 text-center text-slate-400"></i>
+                    Analytics
+                </a>
+                <a href="billing.html" class="flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm font-medium text-slate-600 dark:text-slate-400 hover:bg-slate-50 dark:hover:bg-slate-800 hover:text-emerald-600 transition-all">
+                    <i class="fa-solid fa-file-invoice-dollar w-5 text-center text-slate-400"></i>
+                    Tagihan & Usage
+                </a>
+            </div>
+            
+            <div class="pt-6 mt-2">
+                <p class="px-3 text-[11px] font-bold text-slate-400 dark:text-slate-500 uppercase tracking-wider mb-3">System</p>
+                <a href="system.html" class="flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm font-medium text-slate-600 dark:text-slate-400 hover:bg-slate-50 dark:hover:bg-slate-800 hover:text-emerald-600 transition-all">
+                    <i class="fa-solid fa-server w-5 text-center text-slate-400"></i>
+                    System Log
+                </a>
+                <a href="settings.html" class="flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm font-medium text-slate-600 dark:text-slate-400 hover:bg-slate-50 dark:hover:bg-slate-800 hover:text-emerald-600 transition-all">
+                    <i class="fa-solid fa-gear w-5 text-center text-slate-400"></i>
+                    Pengaturan
+                </a>
+            </div>
+        </nav>
+        
+        <!-- User Mini Profile -->
+        <div class="p-4 border-t border-slate-100 dark:border-slate-800">
+            <div class="flex items-center gap-3 p-3 rounded-xl hover:bg-slate-50 dark:hover:bg-slate-800 cursor-pointer transition-all">
+                <img src="https://ui-avatars.com/api/?name=Admin+User&background=10b981&color=fff&rounded=true&bold=true" alt="Admin" class="w-9 h-9 rounded-full shadow-sm">
+                <div class="flex-1 min-w-0">
+                    <p class="text-sm font-bold text-slate-800 dark:text-white truncate">Admin User</p>
+                    <p class="text-xs text-slate-500 dark:text-slate-400 truncate">admin@omnichat.id</p>
+                </div>
+                <i class="fa-solid fa-chevron-right text-slate-400 text-xs"></i>
+            </div>
+        </div>
+    </aside>
+
+    <!-- Main Content -->
+    <main class="flex-1 flex flex-col h-full overflow-hidden bg-[#f8fafc]">
+        
+        <!-- Top Header -->
+        <header class="h-20 bg-white/80 dark:bg-slate-900/80 backdrop-blur-md border-b border-slate-200 dark:border-slate-800 flex items-center justify-between px-8 shrink-0 z-10">
+            <div>
+                <h1 class="text-xl font-bold text-slate-800 dark:text-white">SMS LBA (Location Based Advertising)</h1>
+                <p class="text-xs text-slate-500 dark:text-slate-400 mt-1">Targetkan pengguna berdasarkan lokasi geografis real-time.</p>
+            </div>
+            <div class="flex items-center gap-4">
+                <button onclick="toggleTheme()" class="w-10 h-10 rounded-full border border-slate-200 dark:border-slate-700 flex items-center justify-center text-slate-500 dark:text-slate-400 hover:bg-slate-50 dark:hover:bg-slate-800 transition-all">
+                    <i class="fa-solid fa-moon dark:hidden"></i>
+                    <i class="fa-solid fa-sun hidden dark:block"></i>
+                </button>
+                <div class="h-8 w-px bg-slate-200 dark:bg-slate-700 mx-2"></div>
+                <div class="flex flex-col items-end">
+                    <span class="text-xs font-bold text-slate-400 dark:text-slate-500 uppercase tracking-tighter">Sisa Kredit</span>
+                    <span class="text-sm font-bold text-emerald-600">Rp 2.450.000</span>
+                </div>
+                <button class="bg-indigo-600 hover:bg-indigo-700 text-white text-sm font-bold px-6 py-2.5 rounded-xl transition-all shadow-lg shadow-indigo-600/20 ml-2">
+                    Kirim LBA
+                </button>
+            </div>
+        </header>
+
+        <!-- Content Area -->
+        <div class="flex-1 overflow-y-auto p-4 md:p-8">
+            <div class="max-w-6xl mx-auto space-y-8">
+
+                <div class="grid grid-cols-1 lg:grid-cols-2 gap-8">
+                    
+                    <!-- Left: Location Picker -->
+                    <div class="bg-white dark:bg-slate-800 p-8 rounded-3xl border border-slate-200 dark:border-slate-700 shadow-sm space-y-6 transition-all">
+                        <h3 class="font-bold text-slate-800 dark:text-white flex items-center gap-3 text-lg">
+                            <span class="w-8 h-8 rounded-lg bg-indigo-50 dark:bg-indigo-900/20 text-indigo-600 dark:text-indigo-400 flex items-center justify-center text-sm"><i class="fa-solid fa-map-location-dot"></i></span>
+                            Tentukan Area Target
+                        </h3>
+                        
+                        <div class="space-y-4">
+                            <div>
+                                <label class="block text-xs font-bold text-slate-500 dark:text-slate-400 uppercase tracking-wider mb-2">Cari Lokasi / Gedung</label>
+                                <div class="relative">
+                                    <i class="fa-solid fa-magnifying-glass absolute left-3 top-1/2 -translate-y-1/2 text-slate-400 text-sm"></i>
+                                    <input type="text" placeholder="Misal: Mall Grand Indonesia, Jakarta" class="w-full pl-10 pr-4 py-3 bg-slate-50 dark:bg-slate-900/50 border border-slate-200 dark:border-slate-700 rounded-xl text-sm text-slate-800 dark:text-slate-200 focus:ring-2 focus:ring-indigo-200 outline-none transition-all">
+                                </div>
+                            </div>
+                            
+                            <div class="h-80 rounded-2xl map-grid border border-slate-200 dark:border-slate-700 relative overflow-hidden flex items-center justify-center">
+                                <!-- Mock Map Background -->
+                                <div class="absolute inset-0 map-bg opacity-40 dark:opacity-20 grayscale pointer-events-none"></div>
+                                
+                                <!-- Interactive Circle -->
+                                <div id="radiusCircle" class="w-24 h-24 rounded-full bg-indigo-500/10 border-2 border-indigo-500 flex items-center justify-center relative shadow-[0_0_20px_rgba(99,102,241,0.2)] transition-all duration-300">
+                                    <div class="w-3 h-3 rounded-full bg-indigo-600 shadow-lg ring-2 ring-white"></div>
+                                    <!-- Coordinate Label -->
+                                    <div class="absolute -top-10 bg-slate-800 text-white text-[9px] font-bold px-2 py-1 rounded shadow-xl whitespace-nowrap">
+                                         Lat: -6.2088, Lon: 106.8456
+                                    </div>
+                                </div>
+
+                                <button class="absolute bottom-4 right-4 bg-white dark:bg-slate-700 px-4 py-2 rounded-lg shadow-lg border border-slate-100 dark:border-slate-600 text-[10px] font-bold text-slate-700 dark:text-slate-200 hover:bg-slate-50 transition-all">
+                                    <i class="fa-solid fa-crosshairs mr-2"></i> Lock Coordinate
+                                </button>
+                            </div>
+
+                            <div class="space-y-4">
+                                <div class="flex justify-between items-center px-1">
+                                    <label class="block text-xs font-bold text-slate-500 dark:text-slate-400 uppercase tracking-wider">Radius Target (meter)</label>
+                                    <span id="radiusValue" class="text-sm font-bold text-indigo-600 dark:text-indigo-400">1000m</span>
+                                </div>
+                                <input id="radiusSlider" type="range" min="100" max="5000" step="100" value="1000" oninput="updateRadius(this.value)" class="w-full cursor-pointer">
+                                <div class="flex justify-between text-[9px] text-slate-400 font-bold uppercase">
+                                    <span>100m</span>
+                                    <span>5km</span>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                                <div>
+                                    <label class="block text-xs font-bold text-slate-500 uppercase tracking-wider mb-2">Estimasi User</label>
+                                    <input type="text" disabled value="~15.000 user" class="w-full px-4 py-3 bg-slate-100 border border-slate-200 rounded-xl text-sm text-slate-500 font-bold">
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Right: Message & Advanced -->
+                    <div class="space-y-6">
+                        <div class="bg-white p-8 rounded-3xl border border-slate-200 shadow-sm space-y-6">
+                            <h3 class="font-bold text-slate-800 flex items-center gap-3 text-lg">
+                                <span class="w-8 h-8 rounded-lg bg-indigo-50 text-indigo-600 flex items-center justify-center text-sm"><i class="fa-solid fa-envelope-open-text"></i></span>
+                                Detail Pesan
+                            </h3>
+                            
+                            <div>
+                                <label class="block text-xs font-bold text-slate-500 uppercase tracking-wider mb-2">Isi Pesan SMS LBA</label>
+                                <textarea rows="6" placeholder="Kunjungi booth kami di Grand Indonesia dan dapatkan voucher 50%!" class="w-full p-4 bg-slate-50 border border-slate-200 rounded-xl text-sm focus:ring-2 focus:ring-indigo-200 focus:border-indigo-500 outline-none transition-all resize-none"></textarea>
+                                <div class="flex justify-between mt-2 text-[10px] font-bold text-slate-400">
+                                    <span>Pesan SMS Masking Aktif</span>
+                                    <span>0 / 160</span>
+                                </div>
+                            </div>
+
+                            <div class="pt-4 space-y-4">
+                                <div class="flex items-center justify-between p-4 bg-slate-50 rounded-xl border border-slate-100">
+                                    <span class="text-sm font-medium text-slate-700">Filter berdasarkan Provider</span>
+                                    <div class="flex gap-2">
+                                        <span class="w-6 h-6 rounded bg-red-100 text-red-600 flex items-center justify-center text-[10px] font-bold">T</span>
+                                        <span class="w-6 h-6 rounded bg-yellow-100 text-yellow-600 flex items-center justify-center text-[10px] font-bold">I</span>
+                                        <span class="w-6 h-6 rounded bg-blue-100 text-blue-600 flex items-center justify-center text-[10px] font-bold">XL</span>
+                                    </div>
+                                </div>
+                                <div class="p-4 bg-emerald-50 rounded-xl border border-emerald-100 flex gap-3">
+                                    <i class="fa-solid fa-check-circle text-emerald-600 mt-1"></i>
+                                    <div>
+                                        <p class="text-xs font-bold text-emerald-800">Saldo Cukup</p>
+                                        <p class="text-[10px] text-emerald-700">Estimasi biaya kampanye ini adalah Rp 6.750.000.</p>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                </div>
+
+            </div>
+        </div>
+    </main>
+    <script>
+        // Theme Toggle Logic
+        function toggleTheme() {
+            const isDark = document.documentElement.classList.toggle('dark');
+            localStorage.setItem('theme', isDark ? 'dark' : 'light');
+        }
+
+        // Radius Slider Logic
+        function updateRadius(val) {
+            const label = document.getElementById('radiusValue');
+            const circle = document.getElementById('radiusCircle');
+            
+            // Update Text
+            label.innerText = val >= 1000 ? (val/1000).toFixed(1) + "km" : val + "m";
+            
+            // Visual Circle Scale (Mapping 100-5000 range to pixel size)
+            // Minimum size 40px, maximum size 280px
+            const minPx = 60;
+            const maxPx = 280;
+            const size = ((val - 100) / (5000 - 100)) * (maxPx - minPx) + minPx;
+            
+            circle.style.width = size + "px";
+            circle.style.height = size + "px";
+            
+            // Adjust Opacity based on size for realistic feel
+            const opacity = 0.3 - ((val - 100) / 4900) * 0.2;
+            circle.style.backgroundColor = `rgba(99, 102, 241, ${opacity})`;
+        }
+    </script>
+
+</body>
+</html>
