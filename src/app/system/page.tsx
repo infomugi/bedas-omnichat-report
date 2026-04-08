@@ -47,7 +47,7 @@ export default function SystemLogPage() {
       if (dbLogs && dbLogs.length > 0) {
         setLogs(dbLogs.map((l: any) => ({
           id: l.id,
-          time: new Date(l.time).toLocaleTimeString('id-ID', { hour: '2-digit', minute: '2-digit', second: '2-digit' }),
+          time: new Date(l.created_at).toLocaleTimeString('id-ID', { hour: '2-digit', minute: '2-digit', second: '2-digit' }),
           level: l.level,
           msg: l.msg,
           source: l.source
@@ -71,7 +71,7 @@ export default function SystemLogPage() {
           const l = payload.new;
           const newLog: LogEntry = {
             id: l.id,
-            time: new Date(l.time).toLocaleTimeString('id-ID', { hour: '2-digit', minute: '2-digit', second: '2-digit' }),
+            time: new Date(l.created_at).toLocaleTimeString('id-ID', { hour: '2-digit', minute: '2-digit', second: '2-digit' }),
             level: l.level as any,
             msg: l.msg,
             source: l.source

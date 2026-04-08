@@ -14,7 +14,8 @@ import {
   Database, 
   Settings,
   ChevronRight,
-  SendHorizontal
+  SendHorizontal,
+  Users
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { getProfile } from '@/app/actions/profile';
@@ -28,6 +29,7 @@ const menuGroups = [
       { name: "WhatsApp Blast", icon: Send, href: "/whatsapp-blast" },
       { name: "SMS Blast", icon: MessageSquare, href: "/sms-blast" },
       { name: "SMS LBA", icon: MapPin, href: "/sms-lba" },
+      { name: "Database Kontak", icon: Users, href: "/contacts" },
     ]
   },
   {

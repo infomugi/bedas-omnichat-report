@@ -21,6 +21,7 @@ import { cn } from '@/lib/utils';
 import { getBalance } from '@/app/actions/billing';
 import { createCampaign } from '@/app/actions/campaigns';
 import { updateInstanceStatus, getInstanceStatus } from '@/app/actions/profile';
+import { createClient } from '@/utils/supabase/client';
 
 export default function WhatsAppAPIPage() {
   const [balance, setBalance] = useState<number | null>(null);
@@ -47,30 +48,31 @@ export default function WhatsAppAPIPage() {
       setInstancePhone(inst.phone || null);
     }
     fetchData();
-  }, []);
 
-  useEffect(() => {
-    // Initial logs
-    setLogs([
-      { time: '09:42:11', msg: '[SYSTEM] Initializing WhatsApp instance v3.2.1...', type: 'success' },
-      { time: '09:42:12', msg: '[SYSTEM] Loading session: SES-82193...', type: 'info' },
-      { time: '09:42:15', msg: '[ERROR] Session credentials invalid or expired.', type: 'error' },
-      { time: '09:42:16', msg: '[SYSTEM] Waiting for QR scan interaction...', type: 'info' },
-    ]);
+    // Subscribe to system logs in real-time
+    const supabase = createClient();
+    const channel = supabase
+      .channel('system_logs_realtime')
+      .on(
+        'postgres_changes', 
+        { event: 'INSERT', schema: 'public', table: 'system_logs' }, 
+        (payload) => {
+          const log = payload.new;
+          const timeStr = new Date(log.created_at).toLocaleTimeString('id-ID', { 
+            hour: '2-digit', minute: '2-digit', second: '2-digit' 
+          });
+          setLogs(prev => [...prev, { 
+            time: timeStr, 
+            msg: log.msg, 
+            type: (log.level === 'warn' ? 'error' : log.level) as any 
+          }]);
+        }
+      )
+      .subscribe();
 
-    // Simulated logs interval
-    const interval = setInterval(() => {
-      const messages = [
-        '[SYSTEM] Keep-alive heartbeat sent to core gateway.',
-        '[SYSTEM] RAM Usage: 124MB | Active Threads: 4',
-        '[POLL] Checking for pending background outgoing messages...',
-        '[SYSTEM] DB Connection pool stable (Active: 12/20)'
-      ];
-      const randomMsg = messages[Math.floor(Math.random() * messages.length)];
-      addLog(randomMsg, 'sys');
-    }, 8000);
-
-    return () => clearInterval(interval);
+    return () => {
+      supabase.removeChannel(channel);
+    };
   }, []);
 
   useEffect(() => {
@@ -80,6 +82,7 @@ export default function WhatsAppAPIPage() {
   }, [logs]);
 
   const addLog = (msg: string, type: 'info' | 'error' | 'success' | 'sys' = 'info') => {
+    // Only for local actions, database logs will come from real-time subscription
     const now = new Date();
     const timeStr = now.toLocaleTimeString('id-ID', { hour: '2-digit', minute: '2-digit', second: '2-digit' });
     setLogs(prev => [...prev, { time: timeStr, msg, type }]);
@@ -93,33 +96,30 @@ export default function WhatsAppAPIPage() {
 
     setIsSending(true);
     setStatus(null);
-    addLog(`[ACTION] Requesting test message to ${targetNumber}...`, "info");
+    addLog(`[ACTION] Initiating test message via API to ${targetNumber}...`, "info");
 
-    const result = await createCampaign({
-      name: `Test WhatsApp - ${targetNumber}`,
-      type: 'WhatsApp',
-      sender: 'OMNICHAT',
-      category: 'Blast',
-      message: testMessage,
-      status: 'Sent',
-      targetCount: 1,
-      successCount: 1,
-      failCount: 0,
-      scheduledAt: new Date().toISOString()
-    });
+    try {
+      const response = await fetch('/api/whatsapp/message', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ number: targetNumber, message: testMessage }),
+      });
 
-    if (result.success) {
-      setStatus({ type: 'success', msg: 'Pesan test berhasil dikirim (Saldo terpotong Rp 275).' });
-      addLog(`[SUCCESS] Message delivered to ${targetNumber}. Transaction ID recorded.`, "success");
-      setTestMessage("");
-      // Refresh balance
-      const b = await getBalance();
-      setBalance(b);
-    } else {
-      setStatus({ type: 'error', msg: result.error || 'Gagal mengirim pesan test.' });
-      addLog(`[ERROR] ${result.error}`, "error");
+      const result = await response.json();
+
+      if (result.success) {
+        setStatus({ type: 'success', msg: 'Pesan test berhasil dikirim (Saldo terpotong)' });
+        setTestMessage("");
+        const b = await getBalance();
+        setBalance(b);
+      } else {
+        throw new Error(result.error || 'Gagal mengirim pesan test.');
+      }
+    } catch (err: any) {
+      setStatus({ type: 'error', msg: err.message });
+    } finally {
+      setIsSending(false);
     }
-    setIsSending(false);
   };
 
   const handleSimulateScan = async () => {

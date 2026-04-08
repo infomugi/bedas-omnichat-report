@@ -12,31 +12,58 @@ import {
 import { usePathname } from 'next/navigation';
 import { cn } from '@/lib/utils';
 import { getBalance } from '@/app/actions/billing';
+import { createClient } from '@/utils/supabase/client';
 
 export function Header({ title }: { title: string }) {
   const [isDark, setIsDark] = useState(false);
   const [balance, setBalance] = useState<number>(0);
+  const [unreadCount, setUnreadCount] = useState(0);
   const pathname = usePathname();
 
   // Simple breadcrumb logic
   const pathParts = pathname.split('/').filter(Boolean);
 
   useEffect(() => {
+    const supabase = createClient();
+
     async function loadBalance() {
       const bal = await getBalance();
       setBalance(bal);
     }
+
+    async function loadNotifications() {
+      const { count } = await supabase
+        .from('notifications')
+        .select('*', { count: 'exact', head: true })
+        .eq('is_read', false);
+      setUnreadCount(count || 0);
+    }
+
     loadBalance();
+    loadNotifications();
 
     const interval = setInterval(loadBalance, 30000);
     
+    // Subscribe to notifications
+    const channel = supabase
+      .channel('header_notifications')
+      .on(
+        'postgres_changes',
+        { event: '*', schema: 'public', table: 'notifications' },
+        () => loadNotifications()
+      )
+      .subscribe();
+
     const theme = localStorage.getItem('theme');
     if (theme === 'dark' || (!theme && window.matchMedia('(prefers-color-scheme: dark)').matches)) {
       document.documentElement.classList.add('dark');
       setIsDark(true);
     }
 
-    return () => clearInterval(interval);
+    return () => {
+      clearInterval(interval);
+      supabase.removeChannel(channel);
+    };
   }, []);
 
   const toggleTheme = () => {
@@ -100,7 +127,9 @@ export function Header({ title }: { title: string }) {
         {/* Notifications */}
         <button className="w-10 h-10 rounded-full border border-slate-200 dark:border-dark-border flex items-center justify-center text-slate-500 dark:text-slate-400 hover:bg-slate-50 dark:hover:bg-slate-800 transition-all relative">
           <Bell size={18} />
-          <span className="absolute top-2.5 right-2.5 w-2 h-2 bg-rose-500 rounded-full border border-white dark:border-dark-card"></span>
+          {unreadCount > 0 && (
+            <span className="absolute top-2.5 right-2.5 w-2 h-2 bg-rose-500 rounded-full border border-white dark:border-dark-card animate-pulse"></span>
+          )}
         </button>
 
         <div className="h-8 w-px bg-slate-200 dark:bg-dark-border"></div>
@@ -108,7 +137,9 @@ export function Header({ title }: { title: string }) {
         {/* Credit Display */}
         <div className="flex flex-col items-end">
           <span className="text-[10px] font-bold text-slate-400 dark:text-slate-500 uppercase tracking-tight">Sisa Kredit</span>
-          <span className="text-sm font-bold text-emerald-600 dark:text-emerald-500 tracking-wide">Rp 2.450.000</span>
+          <span className="text-sm font-bold text-emerald-600 dark:text-emerald-500 tracking-wide">
+            {balance.toLocaleString('id-ID', { style: 'currency', currency: 'IDR', minimumFractionDigits: 0 })}
+          </span>
         </div>
       </div>
     </header>

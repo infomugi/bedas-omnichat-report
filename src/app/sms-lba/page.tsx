@@ -63,29 +63,38 @@ export default function SMSLBAPage() {
 
     const est = calculateEstimateRaw(radius);
     
-    const result = await createCampaign({
-      name: `LBA Campaign - ${new Date().toLocaleDateString('id-ID')}`,
-      type: 'SMS',
-      sender: 'OMNICHAT',
-      category: 'LBA',
-      message: message,
-      status: 'Sent',
-      targetCount: est,
-      successCount: est,
-      failCount: 0,
-      scheduledAt: new Date().toISOString()
-    });
+    try {
+      const response = await fetch('/api/sms/lba', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          message: message,
+          targetCount: est,
+          lbaData: {
+            lat: -6.2088, // In a real app, this comes from map marker
+            lng: 106.8456,
+            radius: radius,
+            provider: 'ALL'
+          }
+        }),
+      });
 
-    if (result.success) {
-      setStatus({ type: 'success', msg: 'Kampanye LBA berhasil dikirim!' });
-      setMessage("");
-      // Refresh balance
-      const b = await getBalance();
-      setBalance(b);
-    } else {
-      setStatus({ type: 'error', msg: result.error || 'Terjadi kesalahan saat mengirim LBA.' });
+      const result = await response.json();
+
+      if (result.success) {
+        setStatus({ type: 'success', msg: 'Kampanye LBA berhasil dikirim dan ditargetkan!' });
+        setMessage("");
+        // Refresh balance
+        const b = await getBalance();
+        setBalance(b);
+      } else {
+        throw new Error(result.error || 'Terjadi kesalahan saat mengirim LBA.');
+      }
+    } catch (err: any) {
+      setStatus({ type: 'error', msg: err.message });
+    } finally {
+      setIsSending(false);
     }
-    setIsSending(false);
   };
 
   const mapSize = 60 + ((radius - 100) / 4900) * (280 - 60);

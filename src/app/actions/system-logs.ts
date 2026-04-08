@@ -8,7 +8,7 @@ export async function getSystemLogs() {
   const { data, error } = await supabase
     .from('system_logs')
     .select('*')
-    .order('time', { ascending: false })
+    .order('created_at', { ascending: false })
     .limit(50)
 
   if (error) {

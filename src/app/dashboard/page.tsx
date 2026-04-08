@@ -18,8 +18,17 @@ import {
 } from 'lucide-react';
 import Link from 'next/link';
 import { getDashboardStats } from '@/app/actions/stats';
-export default async function DashboardPage() {
-  const statsData = await getDashboardStats();
+import { cn } from '@/lib/utils';
+export default async function DashboardPage({
+  searchParams,
+}: {
+  searchParams: Promise<{ range?: string; type?: string }>;
+}) {
+  const params = await searchParams;
+  const range = params.range || '7d';
+  const type = params.type || undefined;
+  
+  const statsData = await getDashboardStats(range, type);
   
   const stats = statsData?.summary || {
     totalSent: 0,
@@ -33,6 +42,30 @@ export default async function DashboardPage() {
 
   return (
     <AppLayout title="Ringkasan Dashboard">
+      {/* Range Filter */}
+      <div className="flex items-center justify-end gap-2 mb-6">
+        <span className="text-[10px] font-bold text-slate-400 uppercase tracking-widest mr-2">Rentang Waktu:</span>
+        {[
+          { label: '7 Hari', value: '7d' },
+          { label: '30 Hari', value: '30d' },
+          { label: '90 Hari', value: '90d' },
+          { label: 'Semua', value: 'all' },
+        ].map((r) => (
+          <Link
+            key={r.value}
+            href={`/dashboard?range=${r.value}${type ? `&type=${type}` : ''}`}
+            className={cn(
+              "px-4 py-1.5 rounded-lg text-xs font-bold transition-all border",
+              range === r.value 
+                ? "bg-slate-800 border-slate-800 text-white shadow-lg shadow-slate-200 dark:shadow-none" 
+                : "bg-white dark:bg-slate-800 border-slate-200 dark:border-slate-700 text-slate-600 dark:text-slate-400 hover:bg-slate-50 dark:hover:bg-slate-700"
+            )}
+          >
+            {r.label}
+          </Link>
+        ))}
+      </div>
+
       {/* Welcome Card */}
       <div className="relative overflow-hidden bg-gradient-to-r from-emerald-600 to-teal-500 rounded-3xl p-8 text-white shadow-xl shadow-emerald-500/20">
         <div className="relative z-10 flex flex-col md:flex-row justify-between items-center gap-6">
