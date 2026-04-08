@@ -11,7 +11,9 @@ import {
   Navigation,
   Radius,
   Layers,
-  ChevronRight
+  ChevronRight,
+  RefreshCw,
+  AlertCircle
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { getBalance } from '@/app/actions/billing';
@@ -34,19 +36,62 @@ export default function SMSLBAPage() {
     fetchBalance();
   }, []);
 
+  const calculateEstimateRaw = (r: number) => {
+    return Math.floor((r / 100) * 1500);
+  };
+
   const calculateEstimate = (r: number) => {
-    // Mock calculation logic
-    return Math.floor((r / 100) * 1500).toLocaleString('id-ID');
+    return calculateEstimateRaw(r).toLocaleString('id-ID');
+  };
+
+  const calculateCostRaw = (r: number) => {
+    return calculateEstimateRaw(r) * 800;
   };
 
   const calculateCost = (r: number) => {
-    return (Math.floor(r / 100) * 675000).toLocaleString('id-ID', { style: 'currency', currency: 'IDR', minimumFractionDigits: 0 });
+    return calculateCostRaw(r).toLocaleString('id-ID', { style: 'currency', currency: 'IDR', minimumFractionDigits: 0 });
+  };
+
+  const handleSendLBA = async () => {
+    if (!message) {
+      setStatus({ type: 'error', msg: 'Harap masukkan isi pesan iklan.' });
+      return;
+    }
+
+    setIsSending(true);
+    setStatus(null);
+
+    const est = calculateEstimateRaw(radius);
+    
+    const result = await createCampaign({
+      name: `LBA Campaign - ${new Date().toLocaleDateString('id-ID')}`,
+      type: 'SMS',
+      sender: 'OMNICHAT',
+      category: 'LBA',
+      message: message,
+      status: 'Sent',
+      targetCount: est,
+      successCount: est,
+      failCount: 0,
+      scheduledAt: new Date().toISOString()
+    });
+
+    if (result.success) {
+      setStatus({ type: 'success', msg: 'Kampanye LBA berhasil dikirim!' });
+      setMessage("");
+      // Refresh balance
+      const b = await getBalance();
+      setBalance(b);
+    } else {
+      setStatus({ type: 'error', msg: result.error || 'Terjadi kesalahan saat mengirim LBA.' });
+    }
+    setIsSending(false);
   };
 
   const mapSize = 60 + ((radius - 100) / 4900) * (280 - 60);
 
   return (
-    <AppLayout>
+    <AppLayout title="SMS LBA">
       <div className="space-y-8 max-w-6xl mx-auto pb-12">
         {/* Header Section */}
         <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
@@ -54,7 +99,6 @@ export default function SMSLBAPage() {
             <h1 className="text-2xl font-bold text-slate-800 dark:text-white">SMS LBA (Location Based Advertising)</h1>
             <p className="text-sm text-slate-500 dark:text-slate-400 mt-1">Targetkan pengguna berdasarkan lokasi geografis real-time.</p>
           </div>
-          <div className="flex items-center gap-4">
           <div className="flex items-center gap-4">
              <div className="hidden sm:flex flex-col items-end">
                 <span className="text-[10px] font-bold text-slate-400 uppercase tracking-tighter">Sisa Kredit</span>
