@@ -27,6 +27,16 @@ export default function ContactsListPage() {
   const [loading, setLoading] = useState(true);
   const [searchQuery, setSearchQuery] = useState('');
 
+  // Modal States
+  const [isModalOpen, setIsModalOpen] = useState(false);
+  const [isSubmitting, setIsSubmitting] = useState(false);
+  const [newContact, setNewContact] = useState({
+    name: '',
+    phone: '',
+    email: '',
+    tags: ''
+  });
+
   const fetchData = async () => {
     setLoading(true);
     try {
@@ -35,7 +45,7 @@ export default function ContactsListPage() {
       const data = await res.json();
       if (Array.isArray(data)) setContacts(data);
 
-      // 2. Fetch list details from lists API (or filter existing)
+      // 2. Fetch list details from lists API
       const resLists = await fetch('/api/contacts/lists');
       const lists = await resLists.json();
       const current = lists.find((l: any) => l.id === id);
@@ -50,6 +60,45 @@ export default function ContactsListPage() {
   useEffect(() => {
     fetchData();
   }, [id]);
+
+  const handleAddContact = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!newContact.phone) return;
+
+    setIsSubmitting(true);
+    try {
+      const res = await fetch(`/api/contacts/${id}`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          ...newContact,
+          tags: newContact.tags.split(',').map(t => t.trim()).filter(Boolean)
+        })
+      });
+      if (res.ok) {
+        setIsModalOpen(false);
+        setNewContact({ name: '', phone: '', email: '', tags: '' });
+        fetchData();
+      }
+    } catch (err) {
+      console.error(err);
+    } finally {
+      setIsSubmitting(false);
+    }
+  };
+
+  const handleDeleteContact = async (contactId: string, contactName: string) => {
+    if (!confirm(`Hapus kontak "${contactName || 'Unknown'}"?`)) return;
+
+    try {
+      const res = await fetch(`/api/contacts/item/${contactId}`, { method: 'DELETE' });
+      if (res.ok) {
+        setContacts(prev => prev.filter(c => c.id !== contactId));
+      }
+    } catch (err) {
+      console.error(err);
+    }
+  };
 
   const filteredContacts = contacts.filter(c => 
     (c.name?.toLowerCase().includes(searchQuery.toLowerCase()) || 
@@ -81,7 +130,10 @@ export default function ContactsListPage() {
             </div>
           </div>
           <div className="flex items-center gap-3">
-            <button className="flex items-center gap-2 px-6 py-2 bg-emerald-600 hover:bg-emerald-700 text-white rounded-xl text-sm font-bold transition-all shadow-lg shadow-emerald-600/20">
+            <button 
+              onClick={() => setIsModalOpen(true)}
+              className="flex items-center gap-2 px-6 py-2 bg-emerald-600 hover:bg-emerald-700 text-white rounded-xl text-sm font-bold transition-all shadow-lg shadow-emerald-600/20"
+            >
               <UserPlus size={18} />
               Tambah Kontak
             </button>
@@ -172,7 +224,10 @@ export default function ContactsListPage() {
                           <button className="p-2 text-slate-400 hover:text-emerald-600 hover:bg-emerald-50 dark:hover:bg-emerald-900/20 rounded-xl transition-all shadow-sm">
                             <Edit3 className="size-4" />
                           </button>
-                          <button className="p-2 text-slate-400 hover:text-rose-600 hover:bg-rose-50 dark:hover:bg-rose-900/20 rounded-xl transition-all shadow-sm">
+                          <button 
+                            onClick={() => handleDeleteContact(contact.id, contact.name)}
+                            className="p-2 text-slate-400 hover:text-rose-600 hover:bg-rose-50 dark:hover:bg-rose-900/20 rounded-xl transition-all shadow-sm"
+                          >
                             <Trash2 className="size-4" />
                           </button>
                         </div>
@@ -185,6 +240,85 @@ export default function ContactsListPage() {
           </div>
         </div>
       </div>
+
+      {/* Modal Tambah Kontak */}
+      {isModalOpen && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
+          <div className="absolute inset-0 bg-slate-950/60 backdrop-blur-sm" onClick={() => !isSubmitting && setIsModalOpen(false)}></div>
+          <div className="bg-white dark:bg-dark-card w-full max-w-md rounded-[2.5rem] shadow-2xl border border-slate-200 dark:border-dark-border relative p-10 overflow-hidden">
+            <h3 className="text-xl font-black text-slate-800 dark:text-white mb-6">Tambah Kontak Manual</h3>
+            
+            <form onSubmit={handleAddContact} className="space-y-4">
+              <div>
+                <label className="text-[10px] font-bold text-slate-400 uppercase tracking-widest block mb-1 px-1">Nama Penerima</label>
+                <input 
+                  type="text" 
+                  value={newContact.name}
+                  onChange={(e) => setNewContact({...newContact, name: e.target.value})}
+                  placeholder="Contoh: Budi Santoso"
+                  className="w-full px-4 py-3 bg-slate-50 dark:bg-slate-900/50 border border-slate-200 dark:border-dark-border rounded-2xl text-sm outline-none focus:ring-2 focus:ring-emerald-200 transition-all font-medium"
+                />
+              </div>
+
+              <div>
+                <label className="text-[10px] font-bold text-slate-400 uppercase tracking-widest block mb-1 px-1">Nomor Telepon/WA</label>
+                <input 
+                  type="text" 
+                  value={newContact.phone}
+                  onChange={(e) => setNewContact({...newContact, phone: e.target.value})}
+                  placeholder="Contoh: 628123456789"
+                  required
+                  className="w-full px-4 py-3 bg-slate-50 dark:bg-slate-900/50 border border-slate-200 dark:border-dark-border rounded-2xl text-sm outline-none focus:ring-2 focus:ring-emerald-200 transition-all font-bold tracking-wider"
+                />
+              </div>
+
+              <div>
+                <label className="text-[10px] font-bold text-slate-400 uppercase tracking-widest block mb-1 px-1">Email (Opsional)</label>
+                <input 
+                  type="email" 
+                  value={newContact.email}
+                  onChange={(e) => setNewContact({...newContact, email: e.target.value})}
+                  placeholder="budi@example.com"
+                  className="w-full px-4 py-3 bg-slate-50 dark:bg-slate-900/50 border border-slate-200 dark:border-dark-border rounded-2xl text-sm outline-none focus:ring-2 focus:ring-emerald-200 transition-all font-medium"
+                />
+              </div>
+
+              <div>
+                <label className="text-[10px] font-bold text-slate-400 uppercase tracking-widest block mb-2 px-1">Tags (Pisahkan dengan koma)</label>
+                <div className="relative">
+                   <Tag className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-400" size={14} />
+                   <input 
+                    type="text" 
+                    value={newContact.tags}
+                    onChange={(e) => setNewContact({...newContact, tags: e.target.value})}
+                    placeholder="VIP, Customer, Promo"
+                    className="w-full pl-10 pr-4 py-3 bg-slate-50 dark:bg-slate-900/50 border border-slate-200 dark:border-dark-border rounded-2xl text-xs outline-none focus:ring-2 focus:ring-emerald-200 transition-all font-bold uppercase tracking-widest"
+                  />
+                </div>
+              </div>
+
+              <div className="flex gap-3 pt-6">
+                <button 
+                  type="button"
+                  onClick={() => setIsModalOpen(false)}
+                  disabled={isSubmitting}
+                  className="flex-1 py-3.5 border border-slate-100 dark:border-dark-border text-slate-500 font-bold rounded-2xl hover:bg-slate-50 transition-all text-sm"
+                >
+                  Batal
+                </button>
+                <button 
+                   type="submit"
+                   disabled={isSubmitting}
+                   className="flex-1 py-3.5 bg-emerald-600 text-white font-bold rounded-2xl hover:bg-emerald-700 shadow-lg shadow-emerald-600/20 transition-all text-sm flex items-center justify-center gap-2"
+                >
+                  {isSubmitting ? <Loader2 size={18} className="animate-spin" /> : <Database size={18} />}
+                  {isSubmitting ? 'Menympan...' : 'Simpan Kontak'}
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
     </AppLayout>
   );
 }

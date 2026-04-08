@@ -71,7 +71,32 @@ export async function POST(
 }
 
 /**
- * DELETE: Menghapus kontak.
- * Catatan: Biasanya kita hapus berdasarkan ID kontak, bukan list ID. 
- * Tapi kita bisa handle penghapusan masal di sini di masa depan.
+ * DELETE: Menghapus seluruh grup kontak (contact_list).
+ * Karena PostgreSQL ON DELETE CASCADE sudah diset, semua kontak dalam grup ini akan ikut terhapus.
  */
+export async function DELETE(
+  request: Request,
+  { params }: { params: { id: string } }
+) {
+  const supabase = await createClient()
+  const { data: { user } } = await supabase.auth.getUser()
+
+  if (!user) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
+
+  const { error } = await supabase
+    .from('contact_lists')
+    .delete()
+    .eq('id', params.id)
+    .eq('user_id', user.id) // Pastikan milik user yang sedang aktif
+
+  if (error) return NextResponse.json({ error: error.message }, { status: 500 })
+
+  // Log sistem
+  await supabase.from('system_logs').insert({
+    level: 'warn',
+    msg: `Deleted contact list ${params.id}`,
+    source: 'CONTACTS_API'
+  })
+
+  return NextResponse.json({ success: true })
+}

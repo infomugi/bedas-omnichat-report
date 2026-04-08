@@ -22,6 +22,14 @@ export default function ContactsPage() {
   const [lists, setLists] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
   const [searchQuery, setSearchQuery] = useState('');
+  
+  // Modal States
+  const [isModalOpen, setIsModalOpen] = useState(false);
+  const [modalType, setModalType] = useState<'create' | 'upload'>('create');
+  const [newListName, setNewListName] = useState('');
+  const [newListDesc, setNewListDesc] = useState('');
+  const [selectedFile, setSelectedFile] = useState<File | null>(null);
+  const [isSubmitting, setIsSubmitting] = useState(false);
 
   const fetchLists = async () => {
     setLoading(true);
@@ -42,6 +50,76 @@ export default function ContactsPage() {
     fetchLists();
   }, []);
 
+  const handleCreateList = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!newListName) return;
+    
+    setIsSubmitting(true);
+    try {
+      const res = await fetch('/api/contacts/lists', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ name: newListName, description: newListDesc })
+      });
+      if (res.ok) {
+        setIsModalOpen(false);
+        setNewListName('');
+        setNewListDesc('');
+        fetchLists();
+      }
+    } catch (err) {
+      console.error(err);
+    } finally {
+      setIsSubmitting(false);
+    }
+  };
+
+  const handleUploadCSV = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!selectedFile || !newListName) return;
+
+    setIsSubmitting(true);
+    const formData = new FormData();
+    formData.append('file', selectedFile);
+    formData.append('name', newListName);
+    formData.append('channel', 'WhatsApp'); // Default
+
+    try {
+      const res = await fetch('/api/contacts/upload', {
+        method: 'POST',
+        body: formData
+      });
+      if (res.ok) {
+        const result = await res.json();
+        alert(`Berhasil mengimpor ${result.count} kontak!`);
+        setIsModalOpen(false);
+        setSelectedFile(null);
+        setNewListName('');
+        fetchLists();
+      } else {
+        const error = await res.json();
+        alert('Gagal impor: ' + error.error);
+      }
+    } catch (err) {
+      console.error(err);
+    } finally {
+      setIsSubmitting(false);
+    }
+  };
+
+  const handleDeleteList = async (id: string, name: string) => {
+    if (!confirm(`Hapus grup kontak "${name}" beserta seluruh datanya?`)) return;
+    
+    try {
+      const res = await fetch(`/api/contacts/${id}`, { method: 'DELETE' });
+      if (res.ok) {
+        setLists(prev => prev.filter(l => l.id !== id));
+      }
+    } catch (err) {
+      console.error(err);
+    }
+  };
+
   const filteredLists = lists.filter(l => 
     l.name.toLowerCase().includes(searchQuery.toLowerCase())
   );
@@ -58,11 +136,17 @@ export default function ContactsPage() {
             </p>
           </div>
           <div className="flex items-center gap-3">
-            <button className="flex items-center gap-2 px-4 py-2 bg-white dark:bg-slate-800 border border-slate-200 dark:border-dark-border rounded-xl text-sm font-bold text-slate-600 dark:text-slate-300 hover:bg-slate-50 transition-all">
+            <button 
+              onClick={() => { setModalType('upload'); setIsModalOpen(true); }}
+              className="flex items-center gap-2 px-4 py-2 bg-white dark:bg-slate-800 border border-slate-200 dark:border-dark-border rounded-xl text-sm font-bold text-slate-600 dark:text-slate-300 hover:bg-slate-50 transition-all"
+            >
               <FileText size={18} />
               Import CSV
             </button>
-            <button className="flex items-center gap-2 px-6 py-2 bg-emerald-600 hover:bg-emerald-700 text-white rounded-xl text-sm font-bold transition-all shadow-lg shadow-emerald-600/20">
+            <button 
+              onClick={() => { setModalType('create'); setIsModalOpen(true); }}
+              className="flex items-center gap-2 px-6 py-2 bg-emerald-600 hover:bg-emerald-700 text-white rounded-xl text-sm font-bold transition-all shadow-lg shadow-emerald-600/20"
+            >
               <Plus size={18} />
               Buat Grup Baru
             </button>
@@ -154,7 +238,10 @@ export default function ContactsPage() {
                           <button className="p-2 text-slate-400 hover:text-blue-600 hover:bg-blue-50 dark:hover:bg-blue-900/20 rounded-xl transition-all">
                             <Edit3 size={18} />
                           </button>
-                          <button className="p-2 text-slate-400 hover:text-rose-600 hover:bg-rose-50 dark:hover:bg-rose-900/20 rounded-xl transition-all">
+                          <button 
+                            onClick={() => handleDeleteList(list.id, list.name)}
+                            className="p-2 text-slate-400 hover:text-rose-600 hover:bg-rose-50 dark:hover:bg-rose-900/20 rounded-xl transition-all"
+                          >
                             <Trash2 size={18} />
                           </button>
                         </div>
@@ -167,6 +254,89 @@ export default function ContactsPage() {
           </div>
         </div>
       </div>
+
+      {/* Modals Implementation */}
+      {isModalOpen && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
+          <div className="absolute inset-0 bg-slate-950/60 backdrop-blur-sm" onClick={() => !isSubmitting && setIsModalOpen(false)}></div>
+          <div className="bg-white dark:bg-dark-card w-full max-w-md rounded-[2.5rem] shadow-2xl border border-slate-200 dark:border-dark-border relative p-10 overflow-hidden">
+            <h3 className="text-xl font-black text-slate-800 dark:text-white mb-6">
+              {modalType === 'create' ? 'Buat Grup Baru' : 'Import dari CSV'}
+            </h3>
+            
+            <form onSubmit={modalType === 'create' ? handleCreateList : handleUploadCSV} className="space-y-4">
+              <div>
+                <label className="text-[10px] font-bold text-slate-400 uppercase tracking-widest block mb-2 px-1">Nama Grup</label>
+                <input 
+                  type="text" 
+                  value={newListName}
+                  onChange={(e) => setNewListName(e.target.value)}
+                  placeholder="Contoh: Customer Loyal 2026"
+                  disabled={isSubmitting}
+                  className="w-full px-4 py-3 bg-slate-50 dark:bg-slate-900/50 border border-slate-200 dark:border-dark-border rounded-2xl text-sm focus:ring-2 focus:ring-emerald-200 outline-none transition-all"
+                  required
+                />
+              </div>
+
+              {modalType === 'create' ? (
+                <div>
+                  <label className="text-[10px] font-bold text-slate-400 uppercase tracking-widest block mb-2 px-1">Deskripsi (Opsional)</label>
+                  <textarea 
+                    value={newListDesc}
+                    onChange={(e) => setNewListDesc(e.target.value)}
+                    placeholder="Apa isi dari grup kontak ini?"
+                    disabled={isSubmitting}
+                    className="w-full px-4 py-3 bg-slate-50 dark:bg-slate-900/50 border border-slate-200 dark:border-dark-border rounded-2xl text-sm focus:ring-2 focus:ring-emerald-200 outline-none transition-all h-24 resize-none"
+                  />
+                </div>
+              ) : (
+                <div>
+                   <label className="text-[10px] font-bold text-slate-400 uppercase tracking-widest block mb-2 px-1">Pilih File CSV</label>
+                   <div className="relative group">
+                    <input 
+                      type="file" 
+                      accept=".csv"
+                      onChange={(e) => setSelectedFile(e.target.files?.[0] || null)}
+                      disabled={isSubmitting}
+                      className="absolute inset-0 w-full h-full opacity-0 cursor-pointer z-10"
+                      required={modalType === 'upload'}
+                    />
+                    <div className={cn(
+                      "w-full px-4 py-10 border-2 border-dashed border-slate-200 dark:border-slate-800 rounded-3xl flex flex-col items-center justify-center gap-3 transition-all",
+                      selectedFile ? "bg-emerald-50/50 dark:bg-emerald-900/10 border-emerald-500" : "bg-slate-50 dark:bg-slate-900/30 group-hover:border-emerald-200"
+                    )}>
+                      <FileText className={selectedFile ? "text-emerald-500" : "text-slate-400"} size={32} />
+                      <span className="text-xs font-bold text-slate-500 dark:text-slate-400">
+                        {selectedFile ? selectedFile.name : 'Klik atau Drag file CSV ke sini'}
+                      </span>
+                    </div>
+                   </div>
+                   <p className="text-[10px] text-slate-400 mt-3 px-1 italic">Format headers yang didukung: phone, name, email, tags</p>
+                </div>
+              )}
+
+              <div className="flex gap-3 pt-4">
+                <button 
+                  type="button"
+                  onClick={() => setIsModalOpen(false)}
+                  disabled={isSubmitting}
+                  className="flex-1 py-3.5 border border-slate-100 dark:border-dark-border text-slate-500 font-bold rounded-2xl hover:bg-slate-50 transition-all text-sm"
+                >
+                  Batal
+                </button>
+                <button 
+                   type="submit"
+                   disabled={isSubmitting}
+                   className="flex-1 py-3.5 bg-emerald-600 text-white font-bold rounded-2xl hover:bg-emerald-700 shadow-lg shadow-emerald-600/20 transition-all text-sm flex items-center justify-center gap-2"
+                >
+                  {isSubmitting ? <Loader2 size={18} className="animate-spin" /> : <Database size={18} />}
+                  {isSubmitting ? 'Memproses...' : (modalType === 'create' ? 'Buat Grup' : 'Mulai Import')}
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
     </AppLayout>
   );
 }
