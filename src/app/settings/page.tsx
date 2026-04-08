@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { AppLayout } from '@/components/layout/AppLayout';
 import { 
   UserCircle, 
@@ -19,10 +19,36 @@ import {
   Lock
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
+import { getProfile, updateProfile } from '@/app/actions/profile';
 
 export default function SettingsPage() {
   const [showApiKey, setShowApiKey] = useState(false);
   const [copied, setCopied] = useState(false);
+  const [profile, setProfile] = useState<any>(null);
+  const [loading, setLoading] = useState(true);
+  const [saving, setSaving] = useState(false);
+
+  useEffect(() => {
+    async function loadProfile() {
+      const data = await getProfile();
+      setProfile(data);
+      setLoading(false);
+    }
+    loadProfile();
+  }, []);
+
+  const handleSave = async () => {
+    if (!profile) return;
+    setSaving(true);
+    const res = await updateProfile({
+      full_name: profile.full_name,
+      username: profile.username
+    });
+    setSaving(false);
+    if (res.success) {
+      alert('Profil berhasil diperbarui!');
+    }
+  };
 
   const copyToClipboard = (text: string) => {
     navigator.clipboard.writeText(text);
@@ -39,8 +65,12 @@ export default function SettingsPage() {
             <h1 className="text-2xl font-bold text-slate-800 dark:text-white">Pengaturan Aplikasi</h1>
             <p className="text-sm text-slate-500 dark:text-slate-400 mt-1">Konfigurasi profil, manajemen user, dan integrasi API.</p>
           </div>
-          <button className="bg-emerald-600 hover:bg-emerald-700 text-white text-sm font-bold px-6 py-3 rounded-xl transition-all shadow-lg shadow-emerald-600/20 flex items-center gap-2">
-            <Save size={18} /> Simpan Perubahan
+          <button 
+            onClick={handleSave}
+            disabled={saving}
+            className="bg-emerald-600 hover:bg-emerald-700 disabled:opacity-50 text-white text-sm font-bold px-6 py-3 rounded-xl transition-all shadow-lg shadow-emerald-600/20 flex items-center gap-2"
+          >
+            <Save size={18} /> {saving ? 'Menyimpan...' : 'Simpan Perubahan'}
           </button>
         </div>
 
@@ -70,7 +100,8 @@ export default function SettingsPage() {
                 <label className="block text-[10px] font-bold text-slate-500 dark:text-slate-400 uppercase tracking-widest mb-2 px-1">Nama Lengkap</label>
                 <input 
                   type="text" 
-                  defaultValue="Admin Utama" 
+                  value={profile?.full_name || ''} 
+                  onChange={(e) => setProfile({ ...profile, full_name: e.target.value })}
                   className="w-full px-4 py-3.5 bg-slate-50 dark:bg-slate-900/50 border border-slate-200 dark:border-dark-border rounded-xl text-sm font-medium focus:ring-2 focus:ring-emerald-500/20 outline-none transition-all dark:text-slate-200" 
                 />
               </div>
@@ -79,8 +110,9 @@ export default function SettingsPage() {
                 <label className="block text-[10px] font-bold text-slate-500 dark:text-slate-400 uppercase tracking-widest mb-2 px-1">Alamat Email</label>
                 <input 
                   type="email" 
-                  defaultValue="admin@omnichat.id" 
-                  className="w-full px-4 py-3.5 bg-slate-50 dark:bg-slate-900/50 border border-slate-200 dark:border-dark-border rounded-xl text-sm font-medium focus:ring-2 focus:ring-emerald-500/20 outline-none transition-all dark:text-slate-200" 
+                  value={profile?.email || ''} 
+                  disabled
+                  className="w-full px-4 py-3.5 bg-slate-50 dark:bg-slate-900/10 border border-slate-200 dark:border-dark-border rounded-xl text-sm font-medium outline-none transition-all dark:text-slate-400 cursor-not-allowed" 
                 />
               </div>
             </div>

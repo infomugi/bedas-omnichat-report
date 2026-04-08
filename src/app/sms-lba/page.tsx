@@ -14,10 +14,25 @@ import {
   ChevronRight
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
+import { getBalance } from '@/app/actions/billing';
+import { createCampaign } from '@/app/actions/campaigns';
+import { useRouter } from 'next/navigation';
 
 export default function SMSLBAPage() {
+  const router = useRouter();
   const [radius, setRadius] = useState(1000);
   const [message, setMessage] = useState("");
+  const [balance, setBalance] = useState<number | null>(null);
+  const [isSending, setIsSending] = useState(false);
+  const [status, setStatus] = useState<{ type: 'success' | 'error', msg: string } | null>(null);
+
+  React.useEffect(() => {
+    async function fetchBalance() {
+      const b = await getBalance();
+      setBalance(b);
+    }
+    fetchBalance();
+  }, []);
 
   const calculateEstimate = (r: number) => {
     // Mock calculation logic
@@ -40,16 +55,40 @@ export default function SMSLBAPage() {
             <p className="text-sm text-slate-500 dark:text-slate-400 mt-1">Targetkan pengguna berdasarkan lokasi geografis real-time.</p>
           </div>
           <div className="flex items-center gap-4">
+          <div className="flex items-center gap-4">
              <div className="hidden sm:flex flex-col items-end">
                 <span className="text-[10px] font-bold text-slate-400 uppercase tracking-tighter">Sisa Kredit</span>
-                <span className="text-sm font-bold text-emerald-600">Rp 2.450.000</span>
+                <span className="text-sm font-bold text-emerald-600">
+                  {balance !== null ? balance.toLocaleString('id-ID', { style: 'currency', currency: 'IDR', minimumFractionDigits: 0 }) : '...'}
+                </span>
             </div>
-            <button className="bg-indigo-600 hover:bg-indigo-700 text-white text-sm font-bold px-6 py-2.5 rounded-xl transition-all shadow-lg shadow-indigo-600/20 flex items-center gap-2">
-                <Navigation size={18} fill="currentColor" />
-                Kirim LBA
+            <button 
+              onClick={handleSendLBA}
+              disabled={isSending}
+              className={cn(
+                "bg-indigo-600 hover:bg-indigo-700 text-white text-sm font-bold px-6 py-2.5 rounded-xl transition-all shadow-lg shadow-indigo-600/20 flex items-center gap-2",
+                isSending && "opacity-50 cursor-not-allowed"
+              )}
+            >
+                {isSending ? (
+                  <RefreshCw className="animate-spin" size={18} />
+                ) : (
+                  <Navigation size={18} fill="currentColor" />
+                )}
+                {isSending ? "Mengirim..." : "Kirim LBA"}
             </button>
           </div>
         </div>
+
+        {status && (
+          <div className={cn(
+            "p-4 rounded-2xl border flex items-center gap-3 transition-all animate-in fade-in slide-in-from-top-4",
+            status.type === 'success' ? "bg-emerald-50 border-emerald-100 text-emerald-800" : "bg-rose-50 border-rose-100 text-rose-800"
+          )}>
+            {status.type === 'success' ? <CheckCircle2 size={18} /> : <AlertCircle size={18} />}
+            <span className="text-sm font-bold">{status.msg}</span>
+          </div>
+        )}
 
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
             {/* Left: Map & Location */}

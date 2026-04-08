@@ -1,19 +1,33 @@
 "use client";
 
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { AppLayout } from '@/components/layout/AppLayout';
 import { CampaignTable } from '@/components/campaigns/CampaignTable';
-import { mockCampaigns } from '@/lib/mock-data';
-import { Plus, FileDown, Calendar } from 'lucide-react';
+import { getCampaigns, deleteCampaign } from '@/app/actions/campaigns';
+import { Plus, FileDown, Calendar, Loader2 } from 'lucide-react';
 import Link from 'next/link';
 
 export default function SMSBlastPage() {
-  const [campaigns, setCampaigns] = useState(
-    mockCampaigns.filter(c => c.type === 'SMS')
-  );
+  const [campaigns, setCampaigns] = useState<any[]>([]);
+  const [loading, setLoading] = useState(true);
 
-  const handleDelete = (id: string) => {
+  useEffect(() => {
+    async function loadData() {
+      setLoading(true);
+      const data = await getCampaigns('SMS');
+      setCampaigns(data);
+      setLoading(false);
+    }
+    loadData();
+  }, []);
+
+  const handleDelete = async (id: string) => {
     if (confirm('Apakah Anda yakin ingin menghapus kampanye SMS ini?')) {
+      const { error } = await deleteCampaign(id);
+      if (error) {
+        alert('Gagal menghapus kampanye: ' + error);
+        return;
+      }
       setCampaigns(prev => prev.filter(c => c.id !== id));
     }
   };
@@ -48,10 +62,17 @@ export default function SMSBlastPage() {
         </div>
 
         {/* Campaign Table */}
-        <CampaignTable 
-          campaigns={campaigns} 
-          onDelete={handleDelete}
-        />
+        {loading ? (
+          <div className="bg-white dark:bg-dark-card p-20 rounded-[2rem] border border-slate-200 dark:border-dark-border flex flex-col items-center justify-center gap-4">
+            <Loader2 className="text-emerald-500 animate-spin" size={32} />
+            <p className="text-sm font-bold text-slate-400 uppercase tracking-widest">Memuat database...</p>
+          </div>
+        ) : (
+          <CampaignTable 
+            campaigns={campaigns} 
+            onDelete={handleDelete}
+          />
+        )}
       </div>
     </AppLayout>
   );

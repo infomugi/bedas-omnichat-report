@@ -26,7 +26,15 @@ ChartJS.register(
   Filler
 );
 
-export function TrendChart() {
+export function TrendChart({ 
+  labels = ['Senin', 'Selasa', 'Rabu', 'Kamis', 'Jumat', 'Sabtu', 'Minggu'],
+  waData = [0, 0, 0, 0, 0, 0, 0],
+  smsData = [0, 0, 0, 0, 0, 0, 0]
+}: { 
+  labels?: string[], 
+  waData?: number[], 
+  smsData?: number[] 
+}) {
   const options: ChartOptions<'line'> = {
     responsive: true,
     maintainAspectRatio: false,
@@ -34,6 +42,14 @@ export function TrendChart() {
       legend: {
         display: false,
       },
+      tooltip: {
+        backgroundColor: '#1E293B',
+        titleFont: { family: 'Inter', size: 12, weight: 'bold' },
+        bodyFont: { family: 'Inter', size: 12 },
+        padding: 12,
+        cornerRadius: 12,
+        displayColors: true,
+      }
     },
     scales: {
       y: {
@@ -46,7 +62,8 @@ export function TrendChart() {
           font: {
             family: 'Inter',
             size: 11
-          }
+          },
+          callback: (value) => value.toLocaleString('id-ID')
         }
       },
       x: {
@@ -64,29 +81,35 @@ export function TrendChart() {
     },
   };
 
-  const labels = ['Senin', 'Selasa', 'Rabu', 'Kamis', 'Jumat', 'Sabtu', 'Minggu'];
-
-  const data = {
+  const chartData = {
     labels,
     datasets: [
       {
         label: 'WhatsApp',
-        data: [12000, 19000, 15000, 25200, 22000, 30000, 28000],
+        data: waData,
         borderColor: '#10b981',
         backgroundColor: 'rgba(16, 185, 129, 0.1)',
         fill: true,
         tension: 0.4,
+        pointRadius: 4,
+        pointBackgroundColor: '#10b981',
+        pointBorderColor: '#fff',
+        pointBorderWidth: 2,
       },
       {
         label: 'SMS',
-        data: [5000, 8000, 12000, 9000, 15000, 11000, 13000],
+        data: smsData,
         borderColor: '#3b82f6',
         backgroundColor: 'rgba(59, 130, 246, 0.1)',
         fill: true,
         tension: 0.4,
+        pointRadius: 4,
+        pointBackgroundColor: '#3b82f6',
+        pointBorderColor: '#fff',
+        pointBorderWidth: 2,
       },
     ],
   };
 
-  return <Line options={options} data={data} />;
+  return <Line options={options} data={chartData} />;
 }

@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { AppLayout } from '@/components/layout/AppLayout';
 import { 
   Plus, 
@@ -18,21 +18,53 @@ import {
   CheckCircle2
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
+import { getTransactions, getBalance, createTopup } from '@/app/actions/billing';
 
 export default function BillingPage() {
   const [isTopupModalOpen, setIsTopupModalOpen] = useState(false);
   const [step, setStep] = useState(1);
   const [selectedAmount, setSelectedAmount] = useState<number | null>(null);
+  const [transactions, setTransactions] = useState<any[]>([]);
+  const [balance, setBalance] = useState<number>(0);
+  const [loading, setLoading] = useState(true);
+  const [processing, setProcessing] = useState(false);
 
-  const transactions = [
-    { id: 'TRX-9210', date: '05 Apr 2026', desc: 'Top-up Saldo via Bank Transfer', type: 'in', channel: 'SMS', status: 'COMPLETED', amount: 1000000 },
-    { id: 'TRX-8102', date: '02 Apr 2026', desc: 'Pemakaian Campaign "Promo Ramadhan"', type: 'out', channel: 'SMS', status: 'USED', amount: -450000 },
-    { id: 'TRX-7291', date: '28 Mar 2026', desc: 'Monthly Subscription Fee', type: 'out', channel: 'SYSTEM', status: 'COMPLETED', amount: -250000 },
-    { id: 'TRX-6112', date: '25 Mar 2026', desc: 'Top-up Saldo via QRIS', type: 'in', channel: 'SMS', status: 'COMPLETED', amount: 500000 },
-  ];
+  useEffect(() => {
+    async function loadData() {
+      setLoading(true);
+      const [txs, bal] = await Promise.all([
+        getTransactions(),
+        getBalance()
+      ]);
+      setTransactions(txs);
+      setBalance(bal);
+      setLoading(false);
+    }
+    loadData();
+  }, []);
+
+  const handleTopup = async () => {
+    if (!selectedAmount) return;
+    setProcessing(true);
+    const res = await createTopup(selectedAmount);
+    if (res.success) {
+      alert('Top-up berhasil (Simulasi)!');
+      setIsTopupModalOpen(false);
+      // Refresh data
+      const [txs, bal] = await Promise.all([
+        getTransactions(),
+        getBalance()
+      ]);
+      setTransactions(txs);
+      setBalance(bal);
+    } else {
+      alert('Gagal top-up: ' + res.error);
+    }
+    setProcessing(false);
+  };
 
   return (
-    <AppLayout>
+    <AppLayout title="Tagihan & Usage">
       <div className="space-y-8 max-w-6xl mx-auto pb-12">
         {/* Header Section */}
         <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
@@ -50,7 +82,6 @@ export default function BillingPage() {
 
         {/* Credit Cards Grid */}
         <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
-          {/* WhatsApp Credit */}
           <div className="bg-gradient-to-br from-emerald-500 to-emerald-700 rounded-3xl p-8 text-white shadow-xl shadow-emerald-500/20 relative overflow-hidden group">
             <div className="relative z-10">
               <p className="text-[10px] font-bold uppercase tracking-widest opacity-70 mb-2">WhatsApp Account Type</p>
@@ -64,24 +95,21 @@ export default function BillingPage() {
             <div className="absolute right-0 bottom-0 p-8 opacity-10 group-hover:scale-110 transition-transform duration-500">
               <MessageSquare size={120} />
             </div>
-            <div className="absolute -right-4 -top-4 w-32 h-32 bg-white/10 rounded-full blur-3xl"></div>
           </div>
 
-          {/* SMS Credit */}
           <div className="bg-gradient-to-br from-indigo-500 to-indigo-700 rounded-3xl p-8 text-white shadow-xl shadow-indigo-500/20 relative overflow-hidden group">
             <div className="relative z-10">
               <p className="text-[10px] font-bold uppercase tracking-widest opacity-70 mb-2">SMS Credit Balance</p>
-              <h3 className="text-4xl font-black mb-1">Rp 2.450.000</h3>
+              <h3 className="text-4xl font-black mb-1">{(balance || 0).toLocaleString('id-ID', { style: 'currency', currency: 'IDR', minimumFractionDigits: 0 })}</h3>
               <div className="flex items-center gap-2 mt-4">
                 <div className="w-1.5 h-1.5 rounded-full bg-white opacity-40"></div>
-                <p className="text-xs font-medium opacity-80">Estimasi: ~5.444 SMS</p>
+                <p className="text-xs font-medium opacity-80">Estimasi: ~{Math.floor(balance / 450).toLocaleString('id-ID')} SMS</p>
               </div>
               <p className="text-[10px] font-bold mt-2 opacity-50 uppercase tracking-tighter">Per SMS: Rp 450 (Standard)</p>
             </div>
             <div className="absolute right-0 bottom-0 p-8 opacity-10 group-hover:scale-110 transition-transform duration-500">
               <CreditCard size={120} />
             </div>
-            <div className="absolute -right-4 -top-4 w-32 h-32 bg-white/10 rounded-full blur-3xl"></div>
           </div>
         </div>
 
@@ -98,10 +126,6 @@ export default function BillingPage() {
                   className="pl-9 pr-4 py-2 bg-slate-50 dark:bg-slate-900/50 border border-slate-100 dark:border-dark-border rounded-xl text-[11px] font-medium outline-none w-full" 
                 />
               </div>
-              <input 
-                type="month" 
-                className="bg-slate-50 dark:bg-slate-900/50 border border-slate-100 dark:border-dark-border p-2 rounded-xl text-[11px] font-medium outline-none dark:text-slate-200" 
-              />
             </div>
           </div>
 
@@ -115,17 +139,18 @@ export default function BillingPage() {
                   <th className="px-8 py-4">Channel</th>
                   <th className="px-8 py-4 text-right">Nominal</th>
                   <th className="px-8 py-4 text-center">Status</th>
-                  <th className="px-8 py-4 text-center">Invoice</th>
                 </tr>
               </thead>
               <tbody className="divide-y divide-slate-50 dark:divide-dark-border">
-                {transactions.map((tx, i) => (
+                {loading ? (
+                    <tr><td colSpan={6} className="px-8 py-10 text-center text-slate-400 text-xs font-bold uppercase tracking-widest group"><div className="animate-pulse">Loading data transaksi...</div></td></tr>
+                ) : transactions.length > 0 ? transactions.map((tx, i) => (
                   <tr key={i} className="hover:bg-slate-50/50 dark:hover:bg-slate-900/20 transition-colors">
-                    <td className="px-8 py-5 text-xs font-bold text-slate-400 uppercase tabular-nums">{tx.date}</td>
+                    <td className="px-8 py-5 text-xs font-bold text-slate-400 uppercase tabular-nums">{new Date(tx.created_at).toLocaleDateString('id-ID', { day: '2-digit', month: 'short', year: 'numeric' })}</td>
                     <td className="px-8 py-5">
                       <div className="flex flex-col">
-                        <span className="text-sm font-bold text-slate-700 dark:text-slate-300">{tx.desc}</span>
-                        <span className="text-[10px] text-slate-400 font-mono">{tx.id}</span>
+                        <span className="text-sm font-bold text-slate-700 dark:text-slate-300">{tx.description}</span>
+                        <span className="text-[10px] text-slate-400 font-mono">{tx.id.substring(0, 8).toUpperCase()}</span>
                       </div>
                     </td>
                     <td className="px-8 py-5 text-center">
@@ -143,33 +168,24 @@ export default function BillingPage() {
                       "px-8 py-5 text-right font-black tabular-nums",
                       tx.type === 'in' ? "text-emerald-500" : "text-rose-500"
                     )}>
-                      {tx.type === 'in' ? "+" : ""}{tx.amount.toLocaleString('id-ID', { style: 'currency', currency: 'IDR', minimumFractionDigits: 0 })}
-                    </td>
-                    <td className="px-8 py-5">
-                      <div className="flex justify-center">
-                        <span className={cn(
-                          "px-2 py-1 text-[9px] font-black rounded-md tracking-widest",
-                          tx.status === 'COMPLETED' ? "bg-emerald-50 dark:bg-emerald-900/20 text-emerald-600" : "bg-blue-50 dark:bg-blue-900/20 text-blue-600"
-                        )}>
-                          {tx.status}
-                        </span>
-                      </div>
+                      {tx.type === 'in' ? "+" : "-"}{tx.amount.toLocaleString('id-ID', { style: 'currency', currency: 'IDR', minimumFractionDigits: 0 })}
                     </td>
                     <td className="px-8 py-5 text-center">
-                      <button className="p-2 text-slate-300 hover:text-emerald-500 transition-colors">
-                        <FileText size={18} />
-                      </button>
+                      <span className={cn(
+                        "px-2 py-1 text-[9px] font-black rounded-md tracking-widest",
+                        tx.status === 'COMPLETED' ? "bg-emerald-50 dark:bg-emerald-900/20 text-emerald-600" : "bg-blue-50 dark:bg-blue-900/20 text-blue-600"
+                      )}>
+                        {tx.status}
+                      </span>
                     </td>
                   </tr>
-                ))}
+                )) : (
+                  <tr>
+                    <td colSpan={6} className="px-8 py-10 text-center text-slate-400 text-xs font-bold uppercase tracking-widest">Belum ada riwayat transaksi</td>
+                  </tr>
+                )}
               </tbody>
             </table>
-          </div>
-          
-          <div className="p-6 bg-slate-50/50 dark:bg-slate-900/30 text-center border-t border-slate-100 dark:border-dark-border">
-            <button className="text-[11px] font-bold text-slate-400 hover:text-slate-600 uppercase tracking-widest transition-colors">
-              Muat Lebih Banyak Transaksi
-            </button>
           </div>
         </div>
       </div>
@@ -187,13 +203,11 @@ export default function BillingPage() {
             </button>
             
             <div className="p-10">
-              {/* Header */}
               <div className="mb-10 text-center">
                 <h3 className="text-2xl font-black text-slate-800 dark:text-white mb-2">Isi Saldo Kredit</h3>
                 <p className="text-xs text-slate-500 dark:text-slate-400">Pilih nominal dan metode pembayaran yang Anda inginkan.</p>
               </div>
 
-              {/* Progress Indicator */}
               <div className="flex justify-center gap-3 mb-10">
                 {[1, 2, 3].map(i => (
                   <div key={i} className={cn(
@@ -203,10 +217,8 @@ export default function BillingPage() {
                 ))}
               </div>
 
-              {/* Step 1: Amounts */}
               {step === 1 && (
-                <div className="space-y-6">
-                  <div className="grid grid-cols-2 gap-4">
+                <div className="grid grid-cols-2 gap-4">
                     {[
                       { label: 'Lite', val: 100000 },
                       { label: 'Basic', val: 250000 },
@@ -230,22 +242,9 @@ export default function BillingPage() {
                         </p>
                       </button>
                     ))}
-                  </div>
-                  <div>
-                    <label className="block text-[10px] font-bold text-slate-400 uppercase mb-2 ml-1">Kustom Nominal</label>
-                    <div className="relative">
-                      <span className="absolute left-4 top-1/2 -translate-y-1/2 text-sm font-bold text-slate-300">Rp</span>
-                      <input 
-                        type="number" 
-                        placeholder="Min. 50.000" 
-                        className="w-full pl-11 pr-4 py-4 bg-slate-50 dark:bg-slate-900/50 border border-slate-200 dark:border-dark-border rounded-2xl text-sm font-bold text-slate-800 dark:text-white outline-none focus:ring-2 focus:ring-emerald-500/20 transition-all" 
-                      />
-                    </div>
-                  </div>
                 </div>
               )}
 
-              {/* Step 2: Payment Methods */}
               {step === 2 && (
                 <div className="space-y-4">
                   {[
@@ -273,10 +272,9 @@ export default function BillingPage() {
                 </div>
               )}
 
-              {/* Step 3: Checkout */}
               {step === 3 && (
                 <div className="text-center">
-                  <div className="bg-white p-6 rounded-3xl shadow-inner border border-slate-100 mx-auto w-60 h-60 relative group mb-8">
+                  <div className="bg-white p-6 rounded-3xl shadow-inner border border-slate-100 mx-auto w-48 h-48 relative group mb-8">
                     <img 
                       src={`https://api.qrserver.com/v1/create-qr-code/?size=250x250&data=OmniChatCheckout_${selectedAmount}`} 
                       alt="Checkout QR" 
@@ -289,15 +287,12 @@ export default function BillingPage() {
                       {(selectedAmount || 0).toLocaleString('id-ID', { style: 'currency', currency: 'IDR', minimumFractionDigits: 0 })}
                     </h4>
                   </div>
-                  <div className="p-4 bg-amber-50 dark:bg-amber-900/10 border border-amber-100 dark:border-amber-900/30 rounded-2xl text-[10px] text-amber-800 dark:text-amber-400 leading-relaxed flex items-center gap-3">
-                    <Clock size={24} className="shrink-0 text-amber-500" />
-                    <p className="text-left">Mohon selesaikan pembayaran sebelum pukul 23:59. Saldo Anda akan bertambah otomatis setelah transaksi diverifikasi.</p>
-                  </div>
                   <button 
-                    onClick={() => { setIsTopupModalOpen(false); }}
-                    className="w-full mt-8 bg-slate-800 dark:bg-emerald-600 text-white font-bold py-4 rounded-2xl shadow-xl hover:opacity-90 transition-all flex items-center justify-center gap-2"
+                    onClick={handleTopup}
+                    disabled={processing}
+                    className="w-full mt-8 bg-slate-800 dark:bg-emerald-600 text-white font-bold py-4 rounded-2xl shadow-xl hover:opacity-90 disabled:opacity-50 transition-all flex items-center justify-center gap-2"
                   >
-                    <CheckCircle2 size={18} /> Konfirmasi Pembayaran
+                    <CheckCircle2 size={18} /> {processing ? 'Memproses...' : 'Konfirmasi Pembayaran'}
                   </button>
                 </div>
               )}

@@ -17,8 +17,20 @@ import {
   ArrowRight
 } from 'lucide-react';
 import Link from 'next/link';
+import { getDashboardStats } from '@/app/actions/stats';
+export default async function DashboardPage() {
+  const statsData = await getDashboardStats();
+  
+  const stats = statsData?.summary || {
+    totalSent: 0,
+    waSuccess: 0,
+    smsSuccess: 0,
+    totalFailed: 0,
+    countsByChannel: { WhatsApp: 0, SMS: 0 }
+  };
 
-export default function DashboardPage() {
+  const activities = statsData?.activity || [];
+
   return (
     <AppLayout title="Ringkasan Dashboard">
       {/* Welcome Card */}
@@ -51,14 +63,14 @@ export default function DashboardPage() {
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
         <SummaryCard 
           title="Total Terkirim" 
-          value="1.284.500" 
+          value={stats.totalSent.toLocaleString('id-ID')} 
           change="+2.5%" 
           icon={Send} 
           variant="primary" 
         />
         <SummaryCard 
           title="WA Blast Sukses" 
-          value="842.100" 
+          value={stats.waSuccess.toLocaleString('id-ID')} 
           change="-0.4%" 
           icon={MessageCircle} 
           variant="success" 
@@ -66,14 +78,14 @@ export default function DashboardPage() {
         />
         <SummaryCard 
           title="SMS Blast Sukses" 
-          value="435.400" 
+          value={stats.smsSuccess.toLocaleString('id-ID')} 
           change="+4.1%" 
           icon={MessageSquare} 
           variant="info" 
         />
         <SummaryCard 
           title="Total Gagal" 
-          value="7.042" 
+          value={stats.totalFailed.toLocaleString('id-ID')} 
           change="+0.1%" 
           icon={AlertCircle} 
           variant="danger" 
@@ -124,26 +136,30 @@ export default function DashboardPage() {
             </div>
           </div>
           <div className="h-[300px]">
-            <TrendChart />
+            <TrendChart 
+              labels={statsData?.trend?.labels}
+              waData={statsData?.trend?.wa}
+              smsData={statsData?.trend?.sms}
+            />
           </div>
         </div>
         <div className="bg-white dark:bg-dark-card p-6 rounded-2xl border border-slate-200 dark:border-dark-border shadow-sm">
           <h3 className="font-bold text-slate-800 dark:text-white mb-6">Distribusi Channel</h3>
           <div className="h-[200px] flex items-center justify-center">
-            <DistributionChart />
+            <DistributionChart data={statsData?.distribution} />
           </div>
           <div className="mt-6 space-y-3">
             <div className="flex justify-between items-center text-sm">
               <span className="flex items-center gap-2 text-slate-600 dark:text-slate-400"><MessageCircle size={14} className="text-emerald-500" /> WhatsApp</span>
-              <span className="font-bold dark:text-white">65%</span>
+              <span className="font-bold dark:text-white">{statsData?.distribution?.[0] || 0}%</span>
             </div>
             <div className="flex justify-between items-center text-sm">
               <span className="flex items-center gap-2 text-slate-600 dark:text-slate-400"><MessageSquare size={14} className="text-blue-500" /> SMS Blast</span>
-              <span className="font-bold dark:text-white">25%</span>
+              <span className="font-bold dark:text-white">{statsData?.distribution?.[1] || 0}%</span>
             </div>
             <div className="flex justify-between items-center text-sm">
               <span className="flex items-center gap-2 text-slate-600 dark:text-slate-400"><Send size={14} className="text-indigo-500" /> SMS LBA</span>
-              <span className="font-bold dark:text-white">10%</span>
+              <span className="font-bold dark:text-white">{statsData?.distribution?.[2] || 0}%</span>
             </div>
           </div>
         </div>
@@ -158,30 +174,19 @@ export default function DashboardPage() {
           </Link>
         </div>
         <div className="divide-y divide-slate-50 dark:divide-dark-border">
-          <ActivityItem 
-            title='Kampanye "Promo Ramadhan" Selesai'
-            subtitle="12.500 pesan terkirim via WhatsApp Blast"
-            time="Baru Saja"
-            status="SUKSES"
-            statusVariant="success"
-            icon={CheckCircle2}
-          />
-          <ActivityItem 
-            title="Kirim SMS Blast ke 5.000 nomor"
-            subtitle="Sedang dalam antrian (Queued)"
-            time="2 menit lalu"
-            status="PROSES"
-            statusVariant="process"
-            icon={Zap}
-          />
-          <ActivityItem 
-            title="Sisa Kredit Menipis"
-            subtitle="Saldo Anda di bawah Rp 500.000"
-            time="1 jam lalu"
-            status="WARNING"
-            statusVariant="warning"
-            icon={AlertTriangle}
-          />
+          {activities.length > 0 ? activities.map((act: any, i: number) => (
+            <ActivityItem 
+              key={i}
+              title={act.name}
+              subtitle={`${act.success_count.toLocaleString('id-ID')} / ${act.target_count.toLocaleString('id-ID')} pesan ${act.type} ${act.status === 'Sent' ? 'terkirim' : 'direncanakan'}`}
+              time={new Date(act.created_at).toLocaleTimeString('id-ID', { hour: '2-digit', minute: '2-digit' })}
+              status={act.status.toUpperCase()}
+              statusVariant={act.status === 'Sent' ? "success" : act.status === 'Error' ? "warning" : "process"}
+              icon={act.status === 'Sent' ? CheckCircle2 : act.status === 'Error' ? AlertCircle : Zap}
+            />
+          )) : (
+            <div className="p-8 text-center text-slate-400 text-xs font-bold uppercase tracking-widest">Belum ada aktivitas terbaru</div>
+          )}
         </div>
       </div>
     </AppLayout>

@@ -17,10 +17,21 @@ import {
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 
+import { getBalance } from '@/app/actions/billing';
+
 export default function WhatsAppAPIPage() {
+  const [balance, setBalance] = useState<number | null>(null);
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [logs, setLogs] = useState<{ time: string, msg: string, type: 'info' | 'error' | 'success' | 'sys' }[]>([]);
   const terminalRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    async function fetchBalance() {
+      const b = await getBalance();
+      setBalance(b);
+    }
+    fetchBalance();
+  }, []);
 
   useEffect(() => {
     // Initial logs
@@ -74,7 +85,9 @@ export default function WhatsAppAPIPage() {
             <div className="h-8 w-px bg-slate-200 dark:bg-slate-700 hidden sm:block"></div>
             <div className="hidden sm:flex flex-col items-end">
               <span className="text-[10px] font-bold text-slate-400 uppercase tracking-tighter">Sisa Kredit</span>
-              <span className="text-sm font-bold text-emerald-600">Rp 2.450.000</span>
+              <span className="text-sm font-bold text-emerald-600">
+                {balance !== null ? balance.toLocaleString('id-ID', { style: 'currency', currency: 'IDR', minimumFractionDigits: 0 }) : '...'}
+              </span>
             </div>
           </div>
         </div>

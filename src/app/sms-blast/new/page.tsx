@@ -17,22 +17,22 @@ export default function NewWhatsAppBlastPage() {
     try {
       const result = await createCampaign({
         name: data.name,
-        type: 'WhatsApp',
+        type: 'SMS',
         sender: data.sender,
         category: data.category,
         message: data.message,
         status: data.schedule === 'immediate' ? 'Sent' : 'Draft',
-        targetCount: 350000, // Mock for now
-        successCount: data.schedule === 'immediate' ? 350000 : 0,
+        targetCount: 5000, // Mock for SMS
+        successCount: data.schedule === 'immediate' ? 5000 : 0,
         failCount: 0,
         scheduledAt: data.schedule === 'later' ? new Date().toISOString() : undefined
       });
 
       if (result.error) {
-        alert('Gagal membuat kampanye: ' + result.error);
+        alert('Gagal membuat kampanye SMS: ' + result.error);
       } else {
-        alert('Kampanye WhatsApp Blast berhasil dibuat!');
-        router.push('/whatsapp-blast');
+        alert('Kampanye SMS Blast berhasil dibuat!');
+        router.push('/sms-blast');
       }
     } catch (err) {
       alert('Terjadi kesalahan sistem.');
@@ -47,14 +47,14 @@ export default function NewWhatsAppBlastPage() {
         {/* Header Section */}
         <div className="flex items-center gap-4">
           <Link 
-            href="/whatsapp-blast"
+            href="/sms-blast"
             className="w-10 h-10 rounded-xl border border-slate-200 dark:border-dark-border flex items-center justify-center text-slate-500 hover:bg-slate-50 dark:hover:bg-slate-800 transition-all"
           >
             <ArrowLeft size={18} />
           </Link>
           <div>
-            <h1 className="text-2xl font-bold text-slate-800 dark:text-white">Buat WhatsApp Blast</h1>
-            <p className="text-sm text-slate-500 dark:text-slate-400 mt-1">Ikuti langkah mudah untuk mulai menyebarkan pesan Anda.</p>
+            <h1 className="text-2xl font-bold text-slate-800 dark:text-white">Buat SMS Blast</h1>
+            <p className="text-sm text-slate-500 dark:text-slate-400 mt-1">Ikuti langkah mudah untuk mulai mengirim SMS massal.</p>
           </div>
         </div>
 
@@ -62,11 +62,11 @@ export default function NewWhatsAppBlastPage() {
         {isSubmitting ? (
           <div className="bg-white dark:bg-dark-card p-20 rounded-[2.5rem] border border-slate-200 dark:border-dark-border flex flex-col items-center justify-center gap-4">
             <Loader2 className="text-emerald-500 animate-spin" size={32} />
-            <p className="text-sm font-bold text-slate-400 uppercase tracking-widest">Menyimpan Kampanye...</p>
+            <p className="text-sm font-bold text-slate-400 uppercase tracking-widest">Menyimpan Kampanye SMS...</p>
           </div>
         ) : (
           <CreateCampaignForm 
-            onCancel={() => router.push('/whatsapp-blast')}
+            onCancel={() => router.push('/sms-blast')}
             onSubmit={handleSubmit}
           />
         )}

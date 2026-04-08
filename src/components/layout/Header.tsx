@@ -5,19 +5,38 @@ import {
   Bell, 
   Moon, 
   Sun,
-  Search
+  Search,
+  ChevronRight,
+  Command
 } from 'lucide-react';
+import { usePathname } from 'next/navigation';
+import { cn } from '@/lib/utils';
+import { getBalance } from '@/app/actions/billing';
 
 export function Header({ title }: { title: string }) {
   const [isDark, setIsDark] = useState(false);
+  const [balance, setBalance] = useState<number>(0);
+  const pathname = usePathname();
+
+  // Simple breadcrumb logic
+  const pathParts = pathname.split('/').filter(Boolean);
 
   useEffect(() => {
-    // Check initial theme
+    async function loadBalance() {
+      const bal = await getBalance();
+      setBalance(bal);
+    }
+    loadBalance();
+
+    const interval = setInterval(loadBalance, 30000);
+    
     const theme = localStorage.getItem('theme');
     if (theme === 'dark' || (!theme && window.matchMedia('(prefers-color-scheme: dark)').matches)) {
       document.documentElement.classList.add('dark');
       setIsDark(true);
     }
+
+    return () => clearInterval(interval);
   }, []);
 
   const toggleTheme = () => {
@@ -33,13 +52,43 @@ export function Header({ title }: { title: string }) {
   };
 
   return (
-    <header className="h-20 bg-white/80 dark:bg-dark-card/80 backdrop-blur-md border-b border-slate-200 dark:border-dark-border flex items-center justify-between px-8 shrink-0 z-0 transition-colors">
-      <div>
-        <h1 className="text-xl font-bold text-slate-800 dark:text-white">{title}</h1>
-        <p className="text-xs text-slate-500 dark:text-slate-400 mt-1">Pantau seluruh kanal komunikasi Anda dalam satu tampilan.</p>
+    <header className="h-20 bg-white/80 dark:bg-dark-card/80 backdrop-blur-md border-b border-slate-200 dark:border-dark-border flex items-center justify-between px-8 shrink-0 z-10 transition-colors">
+      <div className="flex flex-col">
+        {/* Breadcrumbs */}
+        <div className="flex items-center gap-1.5 text-[10px] font-bold text-slate-400 dark:text-slate-500 uppercase tracking-widest mb-1.5">
+            <span className="hover:text-emerald-500 cursor-pointer transition-colors">OmniChat</span>
+            {pathParts.map((part, i) => (
+                <React.Fragment key={i}>
+                    <ChevronRight size={10} className="text-slate-300 dark:text-slate-700" />
+                    <span className={cn(
+                        "transition-colors",
+                        i === pathParts.length - 1 ? "text-emerald-600 dark:text-emerald-500" : "hover:text-slate-600 dark:hover:text-slate-300 cursor-pointer"
+                    )}>
+                        {part.replace(/-/g, ' ')}
+                    </span>
+                </React.Fragment>
+            ))}
+        </div>
+        <h1 className="text-xl font-black text-slate-800 dark:text-white leading-none">{title}</h1>
       </div>
       
       <div className="flex items-center gap-4">
+        {/* Command Palette Trigger Hint */}
+        <button 
+            className="hidden lg:flex items-center gap-3 px-4 py-2 bg-slate-50 dark:bg-slate-900/50 border border-slate-100 dark:border-dark-border rounded-xl text-slate-400 hover:text-slate-600 dark:hover:text-slate-200 transition-all group mr-2"
+            onClick={() => {
+                const event = new KeyboardEvent('keydown', { key: 'k', metaKey: true });
+                document.dispatchEvent(event);
+            }}
+        >
+            <Search size={16} className="group-hover:text-emerald-500 transition-colors" />
+            <span className="text-[11px] font-bold uppercase tracking-wider">Quick Search...</span>
+            <div className="flex items-center gap-1 px-1.5 py-0.5 bg-white dark:bg-slate-800 rounded border border-slate-200 dark:border-slate-700 shadow-sm">
+                <Command size={10} />
+                <span className="text-[9px] font-black">K</span>
+            </div>
+        </button>
+
         {/* Theme Toggle */}
         <button 
           onClick={toggleTheme}

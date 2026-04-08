@@ -31,45 +31,59 @@ interface LogEntry {
   source: string;
 }
 
+import { getSystemLogs, addSystemLog } from '@/app/actions/system-logs';
+import { createClient } from '@/utils/supabase/client';
+
 export default function SystemLogPage() {
   const [logs, setLogs] = useState<LogEntry[]>([]);
   const terminalRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
-    // Initial Seed Logs
-    const initialLogs: LogEntry[] = [
-      { id: 1, time: '10:45:01', level: 'info', msg: 'System Kernel initialized. Version 5.2.1-stable.', source: 'KERNEL' },
-      { id: 2, time: '10:45:10', level: 'success', msg: 'Connection established to Gateway SMS Provider #4.', source: 'GATEWAY' },
-      { id: 3, time: '10:45:30', level: 'warn', msg: 'WhatsApp Node #02 reporting high memory usage (85%).', source: 'WA-POOL' },
-      { id: 4, time: '10:46:02', level: 'error', msg: 'Failed authentication from IP 182.23.12.9 (Rejected).', source: 'AUTH' },
-      { id: 5, time: '10:46:15', level: 'info', msg: 'Auto-scaling: Deploying new instance for WhatsApp-API-V2.', source: 'SCALER' },
-    ];
-    setLogs(initialLogs);
+    const supabase = createClient();
 
-    // Event Cycle Simulation
-    const interval = setInterval(() => {
-        const levels: ('info' | 'success' | 'warn' | 'error')[] = ['info', 'success', 'success', 'warn'];
-        const sources = ['DB-POOL', 'CRON', 'WA-API', 'SMS-GATEWAY', 'S3-BKP'];
-        const messages = [
-            'Syncing contact database with local cache...',
-            'Heartbeat sent to orchestration layers.',
-            'Routing balance check for user SES-8812.',
-            'Routine audit log rotation completed.',
-            'Backup snapshot taken for cluster OMNI-C1.'
-        ];
-        
-        const newLog: LogEntry = {
-            id: Date.now(),
-            time: new Date().toLocaleTimeString('id-ID', { hour: '2-digit', minute: '2-digit', second: '2-digit' }),
-            level: levels[Math.floor(Math.random() * levels.length)],
-            msg: messages[Math.floor(Math.random() * messages.length)],
-            source: sources[Math.floor(Math.random() * sources.length)]
-        };
-        
-        setLogs(prev => [...prev.slice(-49), newLog]);
-    }, 4000);
+    // Fetch initial logs from database
+    async function fetchInitialLogs() {
+      const dbLogs = await getSystemLogs();
+      if (dbLogs && dbLogs.length > 0) {
+        setLogs(dbLogs.map((l: any) => ({
+          id: l.id,
+          time: new Date(l.time).toLocaleTimeString('id-ID', { hour: '2-digit', minute: '2-digit', second: '2-digit' }),
+          level: l.level,
+          msg: l.msg,
+          source: l.source
+        })));
+      }
+    }
+    
+    fetchInitialLogs();
 
-    return () => clearInterval(interval);
+    // Supabase Realtime Subscription
+    const channel = supabase
+      .channel('schema-db-changes')
+      .on(
+        'postgres_changes',
+        {
+          event: 'INSERT',
+          schema: 'public',
+          table: 'system_logs',
+        },
+        (payload) => {
+          const l = payload.new;
+          const newLog: LogEntry = {
+            id: l.id,
+            time: new Date(l.time).toLocaleTimeString('id-ID', { hour: '2-digit', minute: '2-digit', second: '2-digit' }),
+            level: l.level as any,
+            msg: l.msg,
+            source: l.source
+          };
+          setLogs(prev => [...prev.slice(-49), newLog]);
+        }
+      )
+      .subscribe();
+
+    return () => {
+      supabase.removeChannel(channel);
+    };
   }, []);
 
   useEffect(() => {

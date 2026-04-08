@@ -1,5 +1,3 @@
-"use client";
-
 import React from 'react';
 import { AppLayout } from '@/components/layout/AppLayout';
 import { SummaryCard } from '@/components/dashboard/SummaryCard';
@@ -15,26 +13,49 @@ import {
   ArrowUpRight,
   ArrowDownRight
 } from 'lucide-react';
+import { getDashboardStats } from '@/app/actions/stats';
 
-export default function AnalyticsPage() {
+export default async function AnalyticsPage() {
+  const statsData = await getDashboardStats();
+  const stats = statsData?.summary || {
+    totalSent: 0,
+    waSuccess: 0,
+    smsSuccess: 0,
+    totalFailed: 0,
+    countsByChannel: { WhatsApp: 0, SMS: 0 }
+  };
+
   const channelData = {
     labels: ['WhatsApp Blast', 'SMS Blast', 'SMS LBA'],
     datasets: [
       {
         label: 'Terkirim',
-        data: [350000, 150000, 75000],
+        data: [stats.waSuccess, stats.smsSuccess, 0], 
         backgroundColor: '#10b981',
+        borderRadius: 8,
       },
       {
         label: 'Gagal',
-        data: [7000, 5000, 2000],
-        backgroundColor: '#f1f5f9',
+        data: [
+          stats.countsByChannel.WhatsApp - stats.waSuccess, 
+          stats.countsByChannel.SMS - stats.smsSuccess, 
+          0
+        ], 
+        backgroundColor: '#e2e8f0',
+        borderRadius: 8,
       }
     ]
   };
 
+  const deliveryRate = stats.totalSent > 0 
+    ? ((stats.totalSent / (stats.totalSent + stats.totalFailed)) * 100).toFixed(1) 
+    : "0";
+
+  // Mock calculation for spending
+  const totalSpending = (stats.waSuccess * 275) + (stats.smsSuccess * 450);
+
   return (
-    <AppLayout>
+    <AppLayout title="Analytics Overview">
       <div className="space-y-6">
         {/* Header */}
         <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
@@ -45,11 +66,7 @@ export default function AnalyticsPage() {
           <div className="flex items-center gap-3">
             <button className="flex items-center gap-2 px-4 py-2 bg-white dark:bg-slate-800 border border-slate-200 dark:border-dark-border rounded-xl text-sm font-bold text-slate-600 dark:text-slate-300 hover:bg-slate-50 transition-all">
               <Calendar size={18} />
-              30 Hari Terakhir
-            </button>
-            <button className="flex items-center gap-2 px-4 py-2 bg-emerald-600 hover:bg-emerald-700 text-white rounded-xl text-sm font-bold transition-all shadow-lg shadow-emerald-600/20">
-              <Filter size={18} />
-              Filter Lanjutan
+              7 Hari Terakhir
             </button>
           </div>
         </div>
@@ -58,7 +75,7 @@ export default function AnalyticsPage() {
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
           <SummaryCard 
             title="Avg. Delivery Rate" 
-            value="98.2%" 
+            value={`${deliveryRate}%`} 
             change="+0.5%" 
             isTrendUp={true} 
             icon={TrendingUp} 
@@ -66,7 +83,7 @@ export default function AnalyticsPage() {
           />
           <SummaryCard 
             title="Total Pesan" 
-            value="575k" 
+            value={stats.totalSent.toLocaleString('id-ID')} 
             change="+12%" 
             isTrendUp={true} 
             icon={BarChart3} 
@@ -82,7 +99,7 @@ export default function AnalyticsPage() {
           />
           <SummaryCard 
             title="Total Spending" 
-            value="Rp 12.5M" 
+            value={totalSpending.toLocaleString('id-ID', { style: 'currency', currency: 'IDR', minimumFractionDigits: 0 })} 
             change="+8%" 
             isTrendUp={true} 
             icon={CreditCard} 
@@ -97,7 +114,7 @@ export default function AnalyticsPage() {
             <div className="flex justify-between items-center mb-6">
               <div>
                 <h3 className="text-base font-bold text-slate-800 dark:text-white">Performa Per Saluran</h3>
-                <p className="text-xs text-slate-500 mt-1">Komparasi volume pesan antar modul</p>
+                <p className="text-xs text-slate-500 mt-1">Komparasi volume pesan sukses vs gagal</p>
               </div>
             </div>
             <div className="h-[350px]">
@@ -108,11 +125,11 @@ export default function AnalyticsPage() {
           <div className="bg-white dark:bg-dark-card border border-slate-200 dark:border-dark-border rounded-2xl p-6 shadow-sm flex flex-col">
             <div className="mb-6">
               <h3 className="text-base font-bold text-slate-800 dark:text-white">Distribusi Saluran</h3>
-              <p className="text-xs text-slate-500 mt-1">Berdasarkan total biaya kampanye</p>
+              <p className="text-xs text-slate-500 mt-1">Berdasarkan volume pengiriman</p>
             </div>
             <div className="flex-1 flex items-center justify-center">
               <div className="h-[250px] w-full">
-                <DistributionChart />
+                <DistributionChart data={statsData?.distribution} />
               </div>
             </div>
           </div>
@@ -135,14 +152,14 @@ export default function AnalyticsPage() {
               </thead>
               <tbody className="divide-y divide-slate-100 dark:divide-dark-border">
                 {[
-                  { name: 'WhatsApp Blast', costPerMsg: 'Rp 275', total: 'Rp 8.2M', trend: 'up', val: '+2%' },
-                  { name: 'SMS Blast', costPerMsg: 'Rp 450', total: 'Rp 3.1M', trend: 'down', val: '-5%' },
-                  { name: 'SMS LBA', costPerMsg: 'Rp 800', total: 'Rp 1.2M', trend: 'up', val: '+1%' },
+                  { name: 'WhatsApp Blast', costPerMsg: 'Rp 275', total: (stats.waSuccess * 275).toLocaleString('id-ID', { style: 'currency', currency: 'IDR', minimumFractionDigits: 0 }), trend: 'up', val: '+2%' },
+                  { name: 'SMS Blast', costPerMsg: 'Rp 450', total: (stats.smsSuccess * 450).toLocaleString('id-ID', { style: 'currency', currency: 'IDR', minimumFractionDigits: 0 }), trend: 'down', val: '-5%' },
+                  { name: 'SMS LBA', costPerMsg: 'Rp 800', total: 'Rp 0', trend: 'up', val: '0%' },
                 ].map((row, i) => (
                   <tr key={i} className="hover:bg-slate-50 dark:hover:bg-slate-800/50 transition-colors">
                     <td className="px-6 py-4 font-bold text-slate-800 dark:text-white">{row.name}</td>
-                    <td className="px-6 py-4 text-right tabular-nums">{row.costPerMsg}</td>
-                    <td className="px-6 py-4 text-right font-bold text-emerald-600">{row.total}</td>
+                    <td className="px-6 py-4 text-right tabular-nums text-slate-500">{row.costPerMsg}</td>
+                    <td className="px-6 py-4 text-right font-bold text-emerald-600 tabular-nums">{row.total}</td>
                     <td className="px-6 py-4">
                       <div className="flex items-center justify-center gap-1">
                         {row.trend === 'up' ? (

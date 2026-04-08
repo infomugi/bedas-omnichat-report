@@ -17,6 +17,7 @@ import {
   SendHorizontal
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
+import { getProfile } from '@/app/actions/profile';
 
 const menuGroups = [
   {
@@ -47,6 +48,15 @@ const menuGroups = [
 
 export function Sidebar() {
   const pathname = usePathname();
+  const [profile, setProfile] = React.useState<any>(null);
+
+  React.useEffect(() => {
+    async function loadProfile() {
+      const data = await getProfile();
+      setProfile(data);
+    }
+    loadProfile();
+  }, []);
 
   return (
     <aside className="w-64 bg-white dark:bg-dark-card border-r border-slate-200 dark:border-dark-border flex flex-col h-full hidden md:flex shadow-[4px_0_24px_rgba(0,0,0,0.02)] z-10 transition-all">
@@ -97,18 +107,18 @@ export function Sidebar() {
 
       {/* User Mini Profile */}
       <div className="p-4 border-t border-slate-100 dark:border-dark-border">
-        <div className="flex items-center gap-3 p-3 rounded-xl hover:bg-slate-50 dark:hover:bg-slate-800 cursor-pointer transition-all">
+        <Link href="/settings" className="flex items-center gap-3 p-3 rounded-xl hover:bg-slate-50 dark:hover:bg-slate-800 cursor-pointer transition-all">
           <img 
-            src="https://ui-avatars.com/api/?name=Admin+User&background=10b981&color=fff&rounded=true&bold=true" 
-            alt="Admin" 
+            src={profile?.avatar_url || `https://ui-avatars.com/api/?name=${profile?.full_name || 'User'}&background=10b981&color=fff&rounded=true&bold=true`} 
+            alt="Profile" 
             className="w-9 h-9 rounded-full shadow-sm"
           />
           <div className="flex-1 min-w-0">
-            <p className="text-sm font-bold text-slate-800 dark:text-white truncate">Admin User</p>
-            <p className="text-xs text-slate-500 truncate lowercase">admin@omnichat.id</p>
+            <p className="text-sm font-bold text-slate-800 dark:text-white truncate">{profile?.full_name || 'Loading...'}</p>
+            <p className="text-xs text-slate-500 truncate lowercase">{profile?.email || '...'}</p>
           </div>
           <ChevronRight size={14} className="text-slate-400" />
-        </div>
+        </Link>
       </div>
     </aside>
   );

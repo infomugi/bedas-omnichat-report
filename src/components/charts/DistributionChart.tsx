@@ -12,7 +12,7 @@ import { Doughnut } from 'react-chartjs-2';
 
 ChartJS.register(ArcElement, Tooltip, Legend);
 
-export function DistributionChart() {
+export function DistributionChart({ data: inputData = [65, 25, 10] }: { data?: number[] }) {
   const options: ChartOptions<'doughnut'> = {
     responsive: true,
     maintainAspectRatio: false,
@@ -21,14 +21,23 @@ export function DistributionChart() {
       legend: {
         display: false,
       },
+      tooltip: {
+        backgroundColor: '#1E293B',
+        padding: 12,
+        cornerRadius: 12,
+        bodyFont: { family: 'Inter', size: 12 },
+        callbacks: {
+          label: (context) => ` ${context.label}: ${context.raw}%`
+        }
+      }
     },
   };
 
-  const data = {
+  const chartData = {
     labels: ['WA Blast', 'SMS Blast', 'SMS LBA'],
     datasets: [
       {
-        data: [65, 25, 10],
+        data: inputData,
         backgroundColor: ['#10b981', '#3b82f6', '#6366f1'],
         borderWidth: 0,
         hoverOffset: 10,
@@ -36,5 +45,5 @@ export function DistributionChart() {
     ],
   };
 
-  return <Doughnut options={options} data={data} />;
+  return <Doughnut options={options} data={chartData} />;
 }
