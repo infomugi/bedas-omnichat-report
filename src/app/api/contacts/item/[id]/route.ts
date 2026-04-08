@@ -49,7 +49,7 @@ export async function PATCH(
     if (error) return NextResponse.json({ error: error.message }, { status: 500 })
 
     return NextResponse.json(data)
-  } catch (err: any) {
+  } catch {
     return NextResponse.json({ error: 'Invalid request' }, { status: 400 })
   }
 }

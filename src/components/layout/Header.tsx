@@ -13,11 +13,15 @@ import { usePathname } from 'next/navigation';
 import { cn } from '@/lib/utils';
 import { getBalance } from '@/app/actions/billing';
 import { createClient } from '@/utils/supabase/client';
+import Link from 'next/link';
+import { Notification } from '@/types/database';
 
 export function Header({ title }: { title: string }) {
   const [isDark, setIsDark] = useState(false);
-  const [balance, setBalance] = useState<number>(0);
   const [unreadCount, setUnreadCount] = useState(0);
+  const [balance, setBalance] = useState<number>(0);
+  const [notifications, setNotifications] = useState<Notification[]>([]);
+  const [showNotifications, setShowNotifications] = useState(false);
   const pathname = usePathname();
 
   // Simple breadcrumb logic
@@ -32,11 +36,15 @@ export function Header({ title }: { title: string }) {
     }
 
     async function loadNotifications() {
-      const { count } = await supabase
+      const { data } = await supabase
         .from('notifications')
-        .select('*', { count: 'exact', head: true })
-        .eq('is_read', false);
-      setUnreadCount(count || 0);
+        .select('*')
+        .order('created_at', { ascending: false })
+        .limit(5);
+        
+      setNotifications(data as Notification[] || []);
+      const unread = (data as Notification[])?.filter(n => !n.is_read).length || 0;
+      setUnreadCount(unread);
     }
 
     loadBalance();
@@ -65,6 +73,16 @@ export function Header({ title }: { title: string }) {
       supabase.removeChannel(channel);
     };
   }, []);
+
+  const markAllAsRead = async () => {
+    const supabase = createClient();
+    await supabase
+      .from('notifications')
+      .update({ is_read: true })
+      .eq('is_read', false);
+    setUnreadCount(0);
+    setNotifications(prev => prev.map(n => ({ ...n, is_read: true })));
+  };
 
   const toggleTheme = () => {
     if (document.documentElement.classList.contains('dark')) {
@@ -125,12 +143,75 @@ export function Header({ title }: { title: string }) {
         </button>
 
         {/* Notifications */}
-        <button className="w-10 h-10 rounded-full border border-slate-200 dark:border-dark-border flex items-center justify-center text-slate-500 dark:text-slate-400 hover:bg-slate-50 dark:hover:bg-slate-800 transition-all relative">
-          <Bell size={18} />
-          {unreadCount > 0 && (
-            <span className="absolute top-2.5 right-2.5 w-2 h-2 bg-rose-500 rounded-full border border-white dark:border-dark-card animate-pulse"></span>
+        <div className="relative">
+          <button 
+            onClick={() => setShowNotifications(!showNotifications)}
+            className="w-10 h-10 rounded-full border border-slate-200 dark:border-dark-border flex items-center justify-center text-slate-500 dark:text-slate-400 hover:bg-slate-50 dark:hover:bg-slate-800 transition-all relative"
+          >
+            <Bell size={18} />
+            {unreadCount > 0 && (
+              <span className="absolute top-2.5 right-2.5 w-2 h-2 bg-rose-500 rounded-full border border-white dark:border-dark-card animate-pulse"></span>
+            )}
+          </button>
+
+          {/* Notifications Dropdown */}
+          {showNotifications && (
+            <>
+              <div className="fixed inset-0 z-20" onClick={() => setShowNotifications(false)}></div>
+              <div className="absolute right-0 mt-4 w-80 bg-white dark:bg-dark-card rounded-3xl border border-slate-200 dark:border-dark-border shadow-2xl z-30 overflow-hidden animate-in fade-in slide-in-from-top-2 duration-300">
+                <div className="p-5 border-b border-slate-100 dark:border-dark-border flex items-center justify-between">
+                  <h4 className="font-bold text-slate-800 dark:text-white">Notifikasi</h4>
+                  <button 
+                    onClick={markAllAsRead}
+                    className="text-[10px] font-bold text-emerald-600 uppercase hover:underline"
+                  >
+                    Tandai Dibaca
+                  </button>
+                </div>
+                <div className="max-h-80 overflow-y-auto">
+                  {notifications.length === 0 ? (
+                    <div className="p-8 text-center text-slate-400 italic text-xs">
+                      Tidak ada notifikasi saat ini.
+                    </div>
+                  ) : (
+                    notifications.map((n, i) => (
+                      <div 
+                        key={i} 
+                        className={cn(
+                          "p-4 border-b border-slate-50 dark:border-dark-border/50 hover:bg-slate-50 dark:hover:bg-slate-900/50 transition-colors cursor-default",
+                          !n.is_read && "bg-emerald-50/30 dark:bg-emerald-900/10"
+                        )}
+                      >
+                        <div className="flex gap-3">
+                          <div className={cn(
+                            "w-8 h-8 rounded-xl flex items-center justify-center shrink-0 shadow-inner",
+                            n.type === 'campaign' ? "bg-blue-50 text-blue-500" : "bg-emerald-50 text-emerald-500"
+                          )}>
+                             <Bell size={14} />
+                          </div>
+                          <div>
+                            <p className="text-xs font-bold text-slate-800 dark:text-slate-200">{n.title}</p>
+                            <p className="text-[10px] text-slate-500 dark:text-slate-400 mt-0.5 line-clamp-2">{n.body}</p>
+                            <span className="text-[8px] text-slate-400 uppercase font-black tabular-nums mt-1 block">
+                              {new Date(n.created_at).toLocaleTimeString('id-ID', { hour: '2-digit', minute: '2-digit' })}
+                            </span>
+                          </div>
+                        </div>
+                      </div>
+                    ))
+                  )}
+                </div>
+                <Link 
+                   href="/system" 
+                   onClick={() => setShowNotifications(false)}
+                   className="block p-4 text-center text-[10px] font-black text-slate-400 uppercase tracking-widest bg-slate-50/50 dark:bg-slate-900/50 hover:text-slate-600 dark:hover:text-white transition-colors border-t border-slate-100 dark:border-dark-border"
+                >
+                  Lihat Semua Aktivitas
+                </Link>
+              </div>
+            </>
           )}
-        </button>
+        </div>
 
         <div className="h-8 w-px bg-slate-200 dark:bg-dark-border"></div>
 

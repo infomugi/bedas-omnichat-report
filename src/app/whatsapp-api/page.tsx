@@ -22,6 +22,8 @@ import { getBalance } from '@/app/actions/billing';
 import { createCampaign } from '@/app/actions/campaigns';
 import { updateInstanceStatus, getInstanceStatus } from '@/app/actions/profile';
 import { createClient } from '@/utils/supabase/client';
+import Image from 'next/image';
+import { SystemLog } from '@/types/database';
 
 export default function WhatsAppAPIPage() {
   const [balance, setBalance] = useState<number | null>(null);
@@ -44,34 +46,65 @@ export default function WhatsAppAPIPage() {
       const b = await getBalance();
       const inst = await getInstanceStatus();
       setBalance(b);
-      setInstanceStatus(inst.status as any);
+      setInstanceStatus(inst.status as 'CONNECTED' | 'DISCONNECTED' | 'CONNECTING');
       setInstancePhone(inst.phone || null);
     }
     fetchData();
 
     // Subscribe to system logs in real-time
     const supabase = createClient();
-    const channel = supabase
-      .channel('system_logs_realtime')
-      .on(
-        'postgres_changes', 
-        { event: 'INSERT', schema: 'public', table: 'system_logs' }, 
-        (payload) => {
-          const log = payload.new;
-          const timeStr = new Date(log.created_at).toLocaleTimeString('id-ID', { 
-            hour: '2-digit', minute: '2-digit', second: '2-digit' 
-          });
-          setLogs(prev => [...prev, { 
-            time: timeStr, 
-            msg: log.msg, 
-            type: (log.level === 'warn' ? 'error' : log.level) as any 
-          }]);
-        }
-      )
-      .subscribe();
+    
+    const setupSubscriptions = async () => {
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user) return;
+
+      const profileChannel = supabase
+        .channel('profile_status')
+        .on(
+          'postgres_changes',
+          { 
+            event: 'UPDATE', 
+            schema: 'public', 
+            table: 'profiles',
+            filter: `id=eq.${user.id}`
+          },
+          (payload) => {
+            const { whatsapp_status, whatsapp_phone } = payload.new;
+            if (whatsapp_status) setInstanceStatus(whatsapp_status as 'CONNECTED' | 'DISCONNECTED' | 'CONNECTING');
+            if (whatsapp_phone !== undefined) setInstancePhone(whatsapp_phone);
+          }
+        )
+        .subscribe();
+
+      const logsChannel = supabase
+        .channel('system_logs_realtime')
+        .on(
+          'postgres_changes', 
+          { event: 'INSERT', schema: 'public', table: 'system_logs' }, 
+          (payload) => {
+            const log = payload.new;
+            const timeStr = new Date(log.created_at).toLocaleTimeString('id-ID', { 
+              hour: '2-digit', minute: '2-digit', second: '2-digit' 
+            });
+            setLogs(prev => [...prev, { 
+              time: timeStr, 
+              msg: log.msg, 
+              type: (log.level === 'warn' ? 'error' : log.level) as 'info' | 'error' | 'success' | 'sys'
+            }]);
+          }
+        )
+        .subscribe();
+
+      return () => {
+        supabase.removeChannel(profileChannel);
+        supabase.removeChannel(logsChannel);
+      };
+    };
+
+    const cleanup = setupSubscriptions();
 
     return () => {
-      supabase.removeChannel(channel);
+      cleanup.then(fn => fn && fn());
     };
   }, []);
 
@@ -115,8 +148,8 @@ export default function WhatsAppAPIPage() {
       } else {
         throw new Error(result.error || 'Gagal mengirim pesan test.');
       }
-    } catch (err: any) {
-      setStatus({ type: 'error', msg: err.message });
+    } catch (err) {
+      setStatus({ type: 'error', msg: (err as Error).message });
     } finally {
       setIsSending(false);
     }
@@ -392,9 +425,11 @@ export default function WhatsAppAPIPage() {
               </p>
               
               <div className="mx-auto w-64 h-64 bg-white p-4 rounded-2xl shadow-inner border border-slate-100 relative group overflow-hidden">
-                <img 
+                <Image 
                   src="https://api.qrserver.com/v1/create-qr-code/?size=250x250&data=OmniChat+Mock+Session" 
                   alt="QR Code" 
+                  width={250}
+                  height={250}
                   className={cn(
                     "w-full h-full grayscale group-hover:grayscale-0 transition-all duration-500",
                     instanceStatus === 'CONNECTING' && "blur-sm animate-pulse"

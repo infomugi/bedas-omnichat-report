@@ -19,12 +19,14 @@ import {
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { getTransactions, getBalance, createTopup } from '@/app/actions/billing';
+import { BillingTransaction } from '@/types/database';
+import Image from 'next/image';
 
 export default function BillingPage() {
   const [isTopupModalOpen, setIsTopupModalOpen] = useState(false);
   const [step, setStep] = useState(1);
   const [selectedAmount, setSelectedAmount] = useState<number | null>(null);
-  const [transactions, setTransactions] = useState<any[]>([]);
+  const [transactions, setTransactions] = useState<BillingTransaction[]>([]);
   const [balance, setBalance] = useState<number>(0);
   const [loading, setLoading] = useState(true);
   const [processing, setProcessing] = useState(false);
@@ -36,7 +38,7 @@ export default function BillingPage() {
         getTransactions(),
         getBalance()
       ]);
-      setTransactions(txs);
+      setTransactions(txs as BillingTransaction[]);
       setBalance(bal);
       setLoading(false);
     }
@@ -55,7 +57,7 @@ export default function BillingPage() {
         getTransactions(),
         getBalance()
       ]);
-      setTransactions(txs);
+      setTransactions(txs as BillingTransaction[]);
       setBalance(bal);
     } else {
       alert('Gagal top-up: ' + res.error);
@@ -275,9 +277,11 @@ export default function BillingPage() {
               {step === 3 && (
                 <div className="text-center">
                   <div className="bg-white p-6 rounded-3xl shadow-inner border border-slate-100 mx-auto w-48 h-48 relative group mb-8">
-                    <img 
+                    <Image 
                       src={`https://api.qrserver.com/v1/create-qr-code/?size=250x250&data=OmniChatCheckout_${selectedAmount}`} 
                       alt="Checkout QR" 
+                      width={250}
+                      height={250}
                       className="w-full h-full grayscale hover:grayscale-0 transition-all duration-700"
                     />
                   </div>

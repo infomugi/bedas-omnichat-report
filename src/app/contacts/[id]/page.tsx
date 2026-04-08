@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import { AppLayout } from '@/components/layout/AppLayout';
 import { 
   Users, 
@@ -19,15 +19,15 @@ import {
 import { cn } from '@/lib/utils';
 import Link from 'next/link';
 import { useParams } from 'next/navigation';
+import { Contact, ContactList } from '@/types/database';
 
 export default function ContactsListPage() {
   const { id } = useParams();
-  const [contacts, setContacts] = useState<any[]>([]);
-  const [listInfo, setListInfo] = useState<any>(null);
+  const [contacts, setContacts] = useState<Contact[]>([]);
+  const [listInfo, setListInfo] = useState<ContactList | null>(null);
   const [loading, setLoading] = useState(true);
   const [searchQuery, setSearchQuery] = useState('');
-
-  // Modal States
+  
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [newContact, setNewContact] = useState({
@@ -37,7 +37,8 @@ export default function ContactsListPage() {
     tags: ''
   });
 
-  const fetchData = async () => {
+  const fetchData = useCallback(async () => {
+    if (!id) return;
     setLoading(true);
     try {
       // 1. Fetch contacts
@@ -48,18 +49,18 @@ export default function ContactsListPage() {
       // 2. Fetch list details from lists API
       const resLists = await fetch('/api/contacts/lists');
       const lists = await resLists.json();
-      const current = lists.find((l: any) => l.id === id);
+      const current = lists.find((l: ContactList) => l.id === id);
       setListInfo(current);
     } catch (err) {
       console.error(err);
     } finally {
       setLoading(false);
     }
-  };
+  }, [id]);
 
   useEffect(() => {
     fetchData();
-  }, [id]);
+  }, [fetchData]);
 
   const handleAddContact = async (e: React.FormEvent) => {
     e.preventDefault();

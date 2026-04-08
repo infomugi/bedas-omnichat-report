@@ -19,6 +19,7 @@ import {
 import Link from 'next/link';
 import { getDashboardStats } from '@/app/actions/stats';
 import { cn } from '@/lib/utils';
+import { Campaign } from '@/types/database';
 export default async function DashboardPage({
   searchParams,
 }: {
@@ -207,15 +208,15 @@ export default async function DashboardPage({
           </Link>
         </div>
         <div className="divide-y divide-slate-50 dark:divide-dark-border">
-          {activities.length > 0 ? activities.map((act: any, i: number) => (
+          {activities.length > 0 ? (activities as unknown as Campaign[]).map((act, i) => (
             <ActivityItem 
               key={i}
               title={act.name}
-              subtitle={`${act.success_count.toLocaleString('id-ID')} / ${act.target_count.toLocaleString('id-ID')} pesan ${act.type} ${act.status === 'Sent' ? 'terkirim' : 'direncanakan'}`}
+              subtitle={`${(act.sent_count || 0).toLocaleString('id-ID')} / ${act.total_recipients.toLocaleString('id-ID')} pesan ${act.type} ${act.status === 'completed' ? 'terkirim' : 'direncanakan'}`}
               time={new Date(act.created_at).toLocaleTimeString('id-ID', { hour: '2-digit', minute: '2-digit' })}
               status={act.status.toUpperCase()}
-              statusVariant={act.status === 'Sent' ? "success" : act.status === 'Error' ? "warning" : "process"}
-              icon={act.status === 'Sent' ? CheckCircle2 : act.status === 'Error' ? AlertCircle : Zap}
+              statusVariant={act.status === 'completed' ? "success" : act.status === 'failed' ? "warning" : "process"}
+              icon={act.status === 'completed' ? CheckCircle2 : act.status === 'failed' ? AlertCircle : Zap}
             />
           )) : (
             <div className="p-8 text-center text-slate-400 text-xs font-bold uppercase tracking-widest">Belum ada aktivitas terbaru</div>

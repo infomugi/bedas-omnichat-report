@@ -43,11 +43,11 @@ export async function POST(request: Request) {
   try {
     const body = await request.json()
     const { status, phone, session } = body
-
-    const updateData: any = {
+  
+    const updateData: Record<string, any> = {
       updated_at: new Date().toISOString()
     }
-
+  
     if (status !== undefined) updateData.whatsapp_status = status
     if (phone !== undefined) updateData.whatsapp_phone = phone
     if (session !== undefined) updateData.whatsapp_session = session
@@ -69,7 +69,7 @@ export async function POST(request: Request) {
     })
 
     return NextResponse.json({ success: true })
-  } catch (err: any) {
+  } catch {
     return NextResponse.json({ error: 'Invalid request body' }, { status: 400 })
   }
 }

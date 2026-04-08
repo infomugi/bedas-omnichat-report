@@ -34,7 +34,7 @@ export async function POST(request: Request) {
       transformHeader: (h) => h.trim().toLowerCase() 
     })
 
-    const rows = parseResult.data as any[]
+    const rows = parseResult.data as Record<string, string>[]
 
     if (rows.length === 0) {
       return NextResponse.json({ error: 'File CSV kosong atau format tidak valid' }, { status: 400 })
@@ -103,7 +103,7 @@ export async function POST(request: Request) {
       count: contactsToInsert.length 
     })
 
-  } catch (err: any) {
+  } catch (err) {
     console.error('CSV Import Error:', err)
     return NextResponse.json({ error: 'Terjadi kesalahan saat memproses file' }, { status: 500 })
   }
